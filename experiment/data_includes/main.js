@@ -125,88 +125,6 @@ newTrial("instructions",
         .wait()
 )
 
-Template( "train_table2.csv", row =>
-    newTrial("Train_simple",
-        newText("<p><strong>PRACTICE</strong></p>")
-            .center()
-            .print()
-        ,
-        newText(row.Sentence)
-            .center()
-            .print()
-        ,
-        newText("<p> Press <strong>F</strong> to <strong>Agree</strong> or <strong>J</strong> to <strong>Disagree</strong><p>")
-            .center()
-            .print()
-        ,
-        newText(row.Feedback)
-            .center()
-            .print()
-        ,
-        newSelector()
-            .add( newText("Agree"), newText("Disagree"))
-            .keys("F", "J")
-            .log("first")
-            .wait()
-    )
-    .log( "ID" , getVar("ID") )
-    .log( "Type" , row.Type )
-    .log( "Sentence" , row.Sentence )
-    .log( "Feedback" , row.Feedback )
-)
-
-
-
-newTrial("instructions2",
-    defaultText
-        .center()
-        .print()
-    ,
-    newText("<p>In the actual experiment, the statement will be revealed <strong>automatically</strong>, one word at a time.</p>")
-    ,
-    newText("<p>As each new word appears, the previous word will disappear.</p>")
-    ,
-    newText("<p><strong>This will happen quickly, so be sure to pay attention</strong>.</p>")
-    ,
-    newText("<p>Let's practice.</p>")
-    ,
-    newButton("Click for the next phase of practice.")
-        .center()
-        .print()
-        .wait()
-)
-
-
-Template( "train_table.csv", row =>
-    [
-        "Train",
-        "DashedSentence", {s: row.Sentence},
-        "PennController", newTrial("question",    
-            newText("<p> Press <strong>F</strong> to <strong>Agree</strong> or <strong>J</strong> to <strong>Disagree</strong><p>")
-                .center()
-                .print()
-            ,
-            newText(row.Feedback)
-                .center()
-                .print()
-                .log( "Feedback" , row.Feedback )
-            ,
-            newSelector()
-                .add( newText("Agree"), newText("Disagree"))
-                .keys("F", "J")
-                .log("first")
-                .wait()
-            )
-            .log( "ID" , getVar("ID") )
-            .log( "Type" , row.Type )
-            .log( "Sentence" , row.Sentence )
-            .log( "Feedback" , row.Feedback )
-    ]
-)
-
-
-
-
 newTrial("end_train",
     defaultText
         .center()
@@ -242,19 +160,51 @@ Template( "conn_qud_table.csv", row =>
         .log( "ID" , getVar("ID") )
         .log( "Study" , row.Study )
         .log( "SentNumber" , row.SentNumber )
-        .log( "Quantifier" , row.Quantifier )
-        .log( "Matrix" , row.Matrix )
-        .log( "WhichCategory" , row.WhichCategory )
-        .log( "Subject" , row.Subject )
-        .log( "Predicate" , row.Predicate )
-        .log( "SentType" , row.SentType )
-        .log( "Verb" , row.Verb )
-        .log( "Embedded" , row.Embedded )
-        .log( "Token" , row.Token )
-        .log( "MatchingCategory" , row.MatchingCategory )
-        .log( "MismatchingCategory" , row.MismatchingCategory )
         .log( "Group"  , row.Group  )
     ]
+)
+
+Template( "conn_qud_table.csv", row =>
+    newTrial( "trial",
+        newTimer(500)
+            .start()
+            .wait()
+        ,
+        newText( `"W${row[row.WhichQuestion+'Question']}?"` )
+            .center()
+            .print()
+        ,
+        newText(`Dana: "${row[row.WhichAnswer+'Answer']}"`)
+            .center()
+            .print()
+        ,
+        newText( `Melissa: "${row.Matrix} w${row[row.WhichQuestion+'Question']}."` )
+            .center()
+            .print()
+        ,
+        newText("<p> Press <strong>F</strong> to <strong>Agree</strong> or <strong>J</strong> to <strong>Disagree</strong><p>")
+            .center()
+            .print()
+        ,
+        newSelector()
+            .add(newText("Agree"), newText("Disagree"))
+            .keys("F", "J")
+            .log()
+            .wait()
+        ,
+        newTimer(500)
+            .start()
+            .wait()
+    )
+    .log( "ID" , getVar("ID") )
+    .log( "Study" , row.Study )
+    .log( "QuestType" , row.QuestType )
+    .log( "WhichQuestion" , row.WhichQuestion )
+    .log( "WhichAnswer" , row.WhichAnswer )
+    .log( "verb" , row.verb )
+    .log( "Matrix" , row.Matrix )
+    .log( "ImageName" , row.ImageName )
+    .log( "Group"  , row.Group  )
 )
 
 
