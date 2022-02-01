@@ -1,0 +1,17 @@
+﻿number,word,qud,Fox_A,connective,Dana_target_A
+1,BET,specific,Is there a B or a T?,and,There is a B and there is a T 
+2,BET,specific,Is there a B or a T?,but,There is a B but there is a T
+3,QET,specific,Is there a B or a T?,and,There is no B and there is a T 
+4,QET,specific,Is there a B or a T?,but,There is no B but there is a T 
+5,BEQ,specific,Is there a B or a T?,and,There is a B and there is no T
+6,BEQ,specific,Is there a B or a T?,but,There is a B but there is no T
+7,QED,specific,Is there a B or a T?,and,There is no B and there is no T
+8,QED,specific,Is there a B or a T?,but,There is no B but there is no T
+9,BET,general,What letters are there?,and,There is a B and there is a T 
+10,BET,general,What letters are there?,but,There is a B but there is a T
+11,QET,general,What letters are there?,and,There is no B and there is a T 
+12,QET,general,What letters are there?,but,There is no B but there is a T 
+13,BEQ,general,What letters are there?,and,There is a B and there is no T
+14,BEQ,general,What letters are there?,but,There is a B but there is no T
+15,QED,general,What letters are there?,and,There is no B and there is no T
+16,QED,general,What letters are there?,but,There is no B but there is no T
