@@ -1,152 +1,81 @@
-PennController.ResetPrefix(null); // Initiates PennController
-PennController.DebugOff()
-// BOTT & NOVECK TRIALS
-// A SEQUENCE
+PennController.ResetPrefix(null); // Shorten command names (keep this line here))
 
-// Sequence("intro","consent", "demo","instructions","Train_simple","instructions2", "Train", "end_train", rshuffle("test"), "send", "end")
-Sequence("test")
+// DebugOff()   // Uncomment this line only when you are 100% done designing your experiment
 
+// First show instructions, then experiment trials, send results and show end screen
+Sequence("instructions", rshuffle("experiment_template"), SendResults(), "end")
 
-// This only works when I don't embed a DashedSentence in a newController()
-var defaults = [
-    "DashedSentence", {mode: "speeded acceptability", wordTime: 250}
-    ];
-
-
-newTrial("intro",
-    defaultText
-        .center()
-        .print()
-    ,
-    newText("<p><strong>Welcome to the Experiment!</strong></p>")
-    ,
-    newText("<p>You will only receive extra credit points for completing <strong>all three parts.</strong></p>")
-    ,
-    newText("<p>This experiment requires the use of a keyboard to register responses.</p>") 
-    ,
-    newText("<p>So you <strong>MUST</strong> be on a laptop, desktop computer, or tablet device with a detachable keyboard.</p>")
-    ,
-    newText("<p>Do not use a cell phone, or tablet without detachable keyboard.</p>")
-    ,
-    newButton("Proceed to the Consent Form")
-        .center()
-        .print()
-        .wait()
+// This is run at the beginning of each trial
+Header(
+    // Declare a global Var element "ID" in which we will store the participant's ID
+    newVar("ID").global()    
 )
-.setOption("hideProgressBar", true); // Do not show the progress bar on first screen
+.log( "id" , getVar("ID") ) // Add the ID to all trials' results lines
 
-newTrial("consent",
-    newHtml("consent.html")
-        .log()
-        .print()
+// Instructions
+newTrial("instructions",
+     // Automatically print all Text elements, centered
+    defaultText.center().print()
     ,
-    newTextInput("ID")
-        .log()
-        .before( newText("before", "<p>Please enter your unique participant ID</p>") )
+    newText("Welcome!")
+    ,
+    newText("In this task, you will have to read few sentences.")
+    ,
+    newText("Are you ready?")
+    ,
+    newText("Please type in your ID below and then click on the Start button to start the experiment.")
+    ,
+    newTextInput("inputID", "")
         .center()
-        .print()
-    ,
-    newText("warning", "Please enter your ID first")
-        .color("red")
-        .bold()
-    ,
-    newButton("consent button", "By clicking this button I indicate my consent")
-        .center()
-        .print()
-        .wait(  // Make sure the TextInput has been filled
-            getTextInput("ID")
-                .testNot.text("")
-                .failure( getText("warning").print() )
-        )
-    ,   // Create a Var element before going to the next screen
-    newVar("ID")
-        .global()          // Make it globally accessible
-        .set( getTextInput("ID") )
-)
-.log( "ID" , getVar("ID") )
-.setOption("hideProgressBar", true); // Do not show the progress bar on first screen
-
-newTrial("demo",
-    defaultText
-        .center()
-        .print()
-    ,
-    newTextInput("NativeLang")
-        .log()
-        .before( newText("before", "Please enter your native language.") )
-        .center()
-        .print()
-    ,
-    newText("warning", "Please enter your native language.")
-        .color("red")
-        .bold()
-    ,
-    newTextInput("OtherLangs")
-        .before( newText("before", "Do you speak any other languages?") )
-        .center()
+        .css("margin","1em")    // Add a 1em margin around this element
         .print()
     ,
     newButton("Start")
         .center()
         .print()
-        .wait(  // Make sure the TextInput has been filled
-            getTextInput("NativeLang")
-                .testNot.text("")
-                .failure( getText("warning").print() )
-        )
+        // Only validate a click on Start when inputID has been filled
+        .wait( getTextInput("inputID").testNot.text("") )
     ,
-    newVar("NativeLang")
-        .global()
-        .set( getTextInput("NativeLang") )
-    ,
-    newVar("OtherLangs")
-        .global()
-        .set( getTextInput("OtherLangs") )
-)
-.log( "NativeLang" , getVar("NativeLang") )
-.log( "OtherLangs" , getVar("OtherLangs") )
-.setOption("hideProgressBar", true); // Do not show the progress bar on first screen
-
-
-newTrial("instructions",
-    defaultText
-        .center()
-        .print()
-    ,
-    newText("<p>In these first two parts, we will ask you to decide whether you agree or disagree with a statement.</p>")
-    ,
-    newText("<p>If you <strong>Agree</strong> with the sentence, press <strong>F</strong>. If you <strong>Disagree</strong>, then press <strong>J</strong><p>")
-    ,
-    newText("<p>Let's practice.<p>")
-    ,
-    newButton("Click here when you're ready to Continue.")
-        .center()
-        .print()
-        .wait()
+    // Store the text from inputID into the Var element
+    getVar("ID").set( getTextInput("inputID") )
 )
 
-newTrial("end_train",
-    defaultText
-        .center()
-        .print()
-    ,    
-    newText("<p>Great Job!</p>")
-    ,
-    newText("<p><strong>Once you begin the experiment, you should not stop until you finish.</strong></p>")
-    ,
-    newText("<p>Only begin when you are ready.</p>")
-    ,
-    newButton("Click here to start the experiment")
-        .center()
-        .print()
-        .wait()
-)
-
-// This works to get speeded acceptability
 Template( "conn_qud_table.csv", row =>
-    ["test",
-        "DashedSentence", {s: `${row.Matrix} ${row.Quantifier} ${row[row.Subject.replace("Category",row.WhichCategory+'Category')]} are ${row[row.Predicate.replace("Category",row.WhichCategory+'Category')]}`},
-        "PennController", newTrial("question",    
+        newTrial("experiment_template",
+            newText("Word", `The word is <b> ${row.word}</b>.<br>`)
+                .center()
+                .print()
+            ,
+            newText("QUD", `<b>Fox asks</b>: "${row.Fox_A}"`)
+                .center()
+                .print()
+            ,
+            newText("Dana", `<b>Dana responds</b>:<br> <br>`)
+                .center()
+                .print()
+            ,
+            newText("instructions", "Click on the button below to start reading. Click spacebar to proceed to the next word.")
+                .center()
+                .print()
+            ,
+            newButton("Start reading")
+                .center()
+                .print()
+                .wait()
+                .remove()
+            ,
+            getText("instructions")
+                .remove()
+            ,
+            // "DashedSentence", {s: `Dana: ${row.dana}`},
+            newController("DashedSentence", {s : `${row.Dana_target_A}`})
+                .center()
+                .print()
+                .log()      // Make sure to log the participant's progress
+                .wait()
+            // .remove()
+            ,
+        // "PennController", newTrial("question",    
             newText("<p> Press <strong>F</strong> to <strong>Agree</strong> or <strong>J</strong> to <strong>Disagree</strong><p>")
                 .center()
                 .print()
@@ -158,73 +87,70 @@ Template( "conn_qud_table.csv", row =>
                 .wait()
         )
         .log( "ID" , getVar("ID") )
-        .log( "Study" , row.Study )
-        .log( "SentNumber" , row.SentNumber )
-        .log( "Group"  , row.Group  )
-    ]
+        .log( "TrialType" , row.number )
+        .log( "Word" , getVar("Word") )
+        .log( "QUD" , row.qud )
+        .log( "Target" , row.Dana_target_A )
+        .log( "Connective" , row.connective )
 )
 
-Template( "conn_qud_table.csv", row =>
-    newTrial( "trial",
-        newTimer(500)
-            .start()
-            .wait()
-        ,
-        newText( `"W${row[row.WhichQuestion+'Question']}?"` )
-            .center()
-            .print()
-        ,
-        newText(`Dana: "${row[row.WhichAnswer+'Answer']}"`)
-            .center()
-            .print()
-        ,
-        newText( `Melissa: "${row.Matrix} w${row[row.WhichQuestion+'Question']}."` )
-            .center()
-            .print()
-        ,
-        newText("<p> Press <strong>F</strong> to <strong>Agree</strong> or <strong>J</strong> to <strong>Disagree</strong><p>")
-            .center()
-            .print()
-        ,
-        newSelector()
-            .add(newText("Agree"), newText("Disagree"))
-            .keys("F", "J")
-            .log()
-            .wait()
-        ,
-        newTimer(500)
-            .start()
-            .wait()
-    )
-    .log( "ID" , getVar("ID") )
-    .log( "Study" , row.Study )
-    .log( "QuestType" , row.QuestType )
-    .log( "WhichQuestion" , row.WhichQuestion )
-    .log( "WhichAnswer" , row.WhichAnswer )
-    .log( "verb" , row.verb )
-    .log( "Matrix" , row.Matrix )
-    .log( "ImageName" , row.ImageName )
-    .log( "Group"  , row.Group  )
-)
+// First experiment trial
+// newTrial( "experiment",
+//     newText("instructions", "Click on the button below to start reading. Click spacebar to proceed to the next word.")
+//         .print()
+//     ,
+//     newButton("Start reading")
+//         .print()
+//         .wait()
+//         .remove()
+//     ,
+//     getText("instructions")
+//         .remove()
+//     ,
+//     // We use the native-Ibex "DashedSentence" controller
+//     // Documentation at:   https://github.com/addrummond/ibex/blob/master/docs/manual.md#dashedsentence
+//     newText("Letters", "QET")
+//         .bold()
+//         .center()
+//         .print()
+//     ,
+//     newText("QUD", "Fox: \"Is there a B or a T?\"")
+//         .center()
+//         .print()
+//     ,
+//     newController("DashedSentence", {s : "Dana: There is a B but there is a T."})
+//         .print()
+//         .log()      // Make sure to log the participant's progress
+//         .wait()
+//         // .remove()
+//     ,
+//     newText("<p> Press <strong>F</strong> to <strong>Agree</strong> or <strong>J</strong> to <strong>Disagree</strong><p>")
+//         .center()
+//         .print()
+//     ,
+//     newSelector()
+//         .add( newText("Agree"), newText("Disagree"))
+//         .keys("F", "J")
+//         .log("first")
+//         .wait()
+//     ,
+//     newButton("Next") 
+//         .print()
+//         .wait()
+// )
 
-
-SendResults( "send" )
-
+// Final screen
 newTrial("end",
-    newText("You have just completed the first part of the experiment.")
+    newText("Thank you for your participation!")
         .center()
         .print()
     ,
-    newText("If you need to take a break, do so now before proceeding to part two.")
+    // This link a placeholder: replace it with a URL provided by your participant-pooling platform
+    newText("<p><a href='https://www.pcibex.net/' target='_blank'>Click here to validate your submission</a></p>")
         .center()
         .print()
     ,
-    newText("<p><a href='https://expt.pcibex.net/ibexexps/mcmoyer11/CB_B/experiment.html'>Click here for Part 2/3.</a></p>")
-        .center()
-        .print()
-    ,
-    newButton("void")
-        .wait()
+    // Trick: stay on this trial forever (until tab is closed)
+    newButton().wait()
 )
-.setOption( "countsForProgressBar" , false )
-// Make sure the progress bar is full upon reaching this last (non-)trial
+.setOption("countsForProgressBar",false)
