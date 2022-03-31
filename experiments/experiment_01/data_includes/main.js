@@ -3,13 +3,13 @@ PennController.ResetPrefix(null); // Shorten command names (keep this line here)
 // DebugOff()   // Uncomment this line only when you are 100% done designing your experiment
 
 // First show instructions, then experiment trials, send results and show end screen
-Sequence("Instructions", 
-        "StoryIntro1", 
-        "StoryIntro2", 
-        rshuffle("training"), 
-        "TrainEnd", 
-        rshuffle(rshuffle("critical"),rshuffle("fillers")), 
-        SendResults(), 
+Sequence("Instructions",
+        "StoryIntro1",
+        "StoryIntro2",
+        rshuffle("training"),
+        "TrainEnd",
+        rshuffle(rshuffle("critical"),rshuffle("fillers")),
+        SendResults(),
         "end")
 
 
@@ -84,11 +84,9 @@ newTrial("StoryIntro1",
     ,
     newText("The person who picked the letters will then <b>answer</b> the question.")
     ,
-    newText("<p> </p>")
-    ,
-    newText("<b>Your job is to determine whether the answer is </b>")
-    ,
     newText("Press the space bar to see each line of the dialogue.")
+    ,
+    newText("<p> </p>")
     ,
     newText("<p> </p>")
     ,
@@ -106,13 +104,15 @@ newTrial("StoryIntro2",
     ,
     newText("Importantly, you will <b>press the space bar</b> to see the answer that was given.")
     ,
-    newText("The sentence will be revealed either word by word, or in chuncks.")
+    newText("The sentence will be revealed in chunks.")
     ,
-    newText("Press the space bar to reveal each word or chunk in the answer.")
+    newText("Press the space bar to reveal each chunk of the answer.")
     ,
     newText("<p> </p>")
     ,
-    newText("After, you will evaluate the answer given by agreeing or disagreeing with it.")
+    newText("<b>Your job will then be to determine whether that answer is true, </b>")
+    ,
+    newText("<b>considering the question asked.</b>")
     ,
     newText("Using the keyboard, press '<b>F</b>' to <b>agree</b> and '<b>J</b> to <b>disagree</b>.")
     ,
@@ -299,7 +299,7 @@ Template( "critical_specificQUD.csv", row =>
 // fillers
 Template( "fillers.csv", row =>
         newTrial("fillers",
-            newText("Word", `<p>The letters are <b> ${row.Letters}</b>.</p>`)
+            newText("Word", `<p>${row.Answerer} pulls out <b> ${row.Letters}</b>.</p>`)
                 .center()
                 .print()
             ,
