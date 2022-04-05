@@ -123,6 +123,12 @@ newTrial("StoryIntro2",
     newText("Position your left index finger on the 'F' key, the right on 'J', and a thumb on the space bar.")
     ,
     newText("Keep your fingers in these positions throughout the whole experiment.")
+    ,   
+    newText("<p> </p>")
+    ,
+    newImage("https://filedn.com/lDf2Oa0trFMzhcSFiv5VDuu/ibex/fingers.png")
+        .center()
+        .print()
     ,
     newText("<p> </p>")
     ,
