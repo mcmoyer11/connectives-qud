@@ -183,6 +183,15 @@ Template( "training.csv", row =>
                 .log()      // Make sure to log the participant's progress
                 .wait()
             ,
+            newText("Judgement", `<p>Did ${row.Answerer} respond truthfully? </p>`)
+                .center()
+                .print()
+            ,
+            // newKey(" ")
+            //     // .log()
+            //     .wait(75)
+            //     // .log()
+            // ,
             newText("<p>Press <strong>F</strong> to <strong>Agree</strong> or <strong>J</strong> to <strong>Disagree</strong><p>")
                 .center()
                 .print()
@@ -279,6 +288,10 @@ Template( "critical_specificQUD.csv", row =>
                 .wait()
             // .remove()
             ,
+            newText("Judgement", `<p>Did ${row.Answerer} respond truthfully? </p>`)
+                .center()
+                .print()
+            ,
             newText("<p> Press <strong>F</strong> to <strong>Agree</strong> or <strong>J</strong> to <strong>Disagree</strong><p>")
                 .center()
                 .print()
@@ -338,6 +351,10 @@ Template( "fillers.csv", row =>
                 .log()      // Make sure to log the participant's progress
                 .wait()
             // .remove()
+            ,
+            newText("Judgement", `<p>Did ${row.Answerer} respond truthfully? </p>`)
+                .center()
+                .print()
             ,
             newText("<p> Press <strong>F</strong> to <strong>Agree</strong> or <strong>J</strong> to <strong>Disagree</strong><p>")
                 .center()
