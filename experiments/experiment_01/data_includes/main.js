@@ -32,9 +32,9 @@ newTrial("Instructions",
     newText("<p>Hello! Welcome to the experiment!</p>")
         .bold()
     ,
-    newText("In this task, you will hear about two friends learning to play a game.")
+    newText("In this task, you will hear about two children learning to play a game.")
     ,
-    newText("You will help them learn by answering questions about how they played.")
+    newText("You will help determine whether they are answering correctly.")
     ,
     // newText("You will see the two friends talk to each other. The things ")
     // ,
@@ -72,21 +72,21 @@ newTrial("Instructions",
 newTrial("StoryIntro1",
     defaultText.center().print()
     ,
-    newText("Two friends, Dana and Fox, are playing a guessing game.")
+    newText("Two children, Dana and Fox, are playing a guessing game.")
     ,
     newText("<p> </p>")
     ,
-    newText("One of them will pick three letters at random from a bag of all the letters.")
+    newText("One of them will pick three letters at random from a bag containing all the letters of the alphabet.")
     ,
-    newText("The other person won't know what letters are picked, they'll have to guess.")
+    newText("The other child won't know what letters are picked; they'll have to guess.")
     ,
-    newText("However, you will see the three letters at the top of each screen.")
+    newText("(However, <u>you</u> will see the three letters at the top of each screen.)")
     ,
     newText("<p> </p>")
     ,
-    newText("Next, the friend that didn't pick letters will ask a <b>question</b> about them.")
+    newText("Next, the child who didn't pick letters will ask a <b>question</b> about the three letters.")
     ,
-    newText("The person who picked the letters will then <b>answer</b> the question.")
+    newText("The child who picked the letters will then <b>answer</b> the question.")
     ,
     newText("Press the space bar to see each line of the dialogue.")
     ,
@@ -188,7 +188,7 @@ Template( "train.csv", row =>
                 .log()      // Make sure to log the participant's progress
                 .wait()
             ,
-            newText("Judgement", `<p>Did ${row.Answerer} respond truthfully? </p>`)
+            newText("Judgement", `<p>Was ${row.Answerer}'s response correct? </p>`)
                 .center()
                 .print()
             ,
@@ -292,7 +292,7 @@ Template( "critical_specificQUD.csv", row =>
                 .wait()
             // .remove()
             ,
-            newText("Judgement", `<p>Did ${row.Answerer} respond truthfully? </p>`)
+            newText("Judgement", `<p>Was ${row.Answerer}'s response correct? </p>`)
                 .center()
                 .print()
             ,
@@ -358,7 +358,7 @@ Template( "fillers.csv", row =>
                 .wait()
             // .remove()
             ,
-            newText("Judgement", `<p>Did ${row.Answerer} respond truthfully? </p>`)
+            newText("Judgement", `<p>Was ${row.Answerer}'s response correct? </p>`)
                 .center()
                 .print()
             ,
