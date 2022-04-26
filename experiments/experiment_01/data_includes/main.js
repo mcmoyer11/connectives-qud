@@ -3,13 +3,17 @@ PennController.ResetPrefix(null); // Shorten command names (keep this line here)
 // DebugOff()   // Uncomment this line only when you are 100% done designing your experiment
 
 // First show instructions, then experiment trials, send results and show end screen
-Sequence("Instructions",
-        "StoryIntro1",
-        "StoryIntro2",
-        rshuffle("training"),
-        "TrainEnd",
-        rshuffle(rshuffle("critical"),rshuffle("fillers")),
-        SendResults(),
+Sequence(
+       "Instructions",
+       "StoryIntro1",
+       "StoryIntro2",
+       rshuffle("training"),
+                "TrainEnd",
+       rshuffle(
+           rshuffle("critical"),
+           rshuffle("fillers")
+       ),
+       SendResults(),
         "end")
 
 
@@ -143,8 +147,9 @@ newTrial("StoryIntro2",
 )
 
 
+    
 // Training trials
-Template( "training.csv", row =>
+Template( "train.csv", row =>
         newTrial("training",
             newText(`<p><b> PRACTICE</b>.</p>`)
                 .center()
@@ -187,11 +192,6 @@ Template( "training.csv", row =>
                 .center()
                 .print()
             ,
-            // newKey(" ")
-            //     // .log()
-            //     .wait(75)
-            //     // .log()
-            // ,
             newText("<p>Press <strong>F</strong> to <strong>Agree</strong> or <strong>J</strong> to <strong>Disagree</strong><p>")
                 .center()
                 .print()
@@ -237,7 +237,9 @@ Template( "training.csv", row =>
         .log( "AnswerRelevance", row.AnswerRelevance)
         .log( "Conj" , row.Conj )
 )
-
+    
+    
+    
 // Instructions
 newTrial("TrainEnd",
      // Automatically print all Text elements, centered
