@@ -1,6 +1,6 @@
 PennController.ResetPrefix(null); // Shorten command names (keep this line here))
 
-// DebugOff()   // Uncomment this line only when you are 100% done designing your experiment
+DebugOff()   // Uncomment this line only when you are 100% done designing your experiment
 
 // First show instructions, then experiment trials, send results and show end screen
 Sequence(
@@ -32,9 +32,9 @@ newTrial("Instructions",
     newText("<p>Hello! Welcome to the experiment!</p>")
         .bold()
     ,
-    newText("In this task, you will hear about two children learning to play a game.")
+    newText("In this task, you will be present while two children are learning to play a game.")
     ,
-    newText("You will help determine whether they are answering correctly.")
+    newText("Your job will be to determine whether they are answering correctly.")
     ,
     // newText("You will see the two friends talk to each other. The things ")
     // ,
@@ -88,7 +88,7 @@ newTrial("StoryIntro1",
     ,
     newText("The child who picked the letters will then <b>answer</b> the question.")
     ,
-    newText("Press the space bar to see each line of the dialogue.")
+    newText("You will press the space bar to see each line of the dialogue.")
     ,
     newText("<p> </p>")
     ,
@@ -108,7 +108,7 @@ newTrial("StoryIntro2",
     ,
     newText("Importantly, you will <b>press the space bar</b> to see the answer that was given.")
     ,
-    newText("The sentence will be revealed in chunks.")
+    newText("The sentence will be revealed in segments.")
     ,
     newText("Press the space bar to reveal each chunk of the answer.")
     ,
@@ -188,7 +188,7 @@ Template( "train.csv", row =>
                 .log()      // Make sure to log the participant's progress
                 .wait()
             ,
-            newText("Judgement", `<p>Was ${row.Answerer}'s response correct? </p>`)
+            newText("Judgement", `<p>Did ${row.Answerer} give a good answer to ${row.Questioner}'s question?</p>`)
                 .center()
                 .print()
             ,
@@ -292,7 +292,7 @@ Template( "critical_specificQUD.csv", row =>
                 .wait()
             // .remove()
             ,
-            newText("Judgement", `<p>Was ${row.Answerer}'s response correct? </p>`)
+            newText("Judgement", `<p>Did ${row.Answerer} give a good answer to ${row.Questioner}'s question?</p>`)
                 .center()
                 .print()
             ,
@@ -358,7 +358,7 @@ Template( "fillers.csv", row =>
                 .wait()
             // .remove()
             ,
-            newText("Judgement", `<p>Was ${row.Answerer}'s response correct? </p>`)
+            newText("Judgement", `<p>Did ${row.Answerer} give a good answer to ${row.Questioner}'s question?</p>`)
                 .center()
                 .print()
             ,
