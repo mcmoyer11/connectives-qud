@@ -114,11 +114,9 @@ newTrial("StoryIntro2",
     ,
     newText("<p> </p>")
     ,
-    newText("<b>Your job will then be to determine whether that answer is true, </b>")
+    newText("<b>Your job will then be to determine whether that answer is good, considering the question asked.</b>")
     ,
-    newText("<b>considering the question asked.</b>")
-    ,
-    newText("Using the keyboard, press '<b>F</b>' to <b>agree</b> and '<b>J</b> to <b>disagree</b>.")
+    newText("Using the keyboard, press '<b>F</b>' to <b>agree</b> and '<b>J</b> to <b>disagree</b>, that the answer is good.")
     ,
     newText("<p> </p>")
     ,
