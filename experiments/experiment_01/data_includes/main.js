@@ -1,6 +1,6 @@
 PennController.ResetPrefix(null); // Shorten command names (keep this line here))
 
-DebugOff()   // Uncomment this line only when you are 100% done designing your experiment
+// DebugOff()   // Uncomment this line only when you are 100% done designing your experiment
 
 // First show instructions, then experiment trials, send results and show end screen
 Sequence(
@@ -13,6 +13,7 @@ Sequence(
            rshuffle("critical"),
            rshuffle("fillers")
        ),
+       "Demo",
        SendResults(),
         "end")
 
@@ -22,7 +23,7 @@ Header(
     // Declare a global Var element "ID" in which we will store the participant's ID
     newVar("ID").global()    
 )
-.log( "id" , getVar("ID") ) // Add the ID to all trials' results lines
+.log( "ID" , getVar("ID") ) // Add the ID to all trials' results lines
 
 // Instructions
 newTrial("Instructions",
@@ -36,11 +37,11 @@ newTrial("Instructions",
     ,
     newText("Your job will be to determine whether they are answering correctly.")
     ,
-    // newText("You will see the two friends talk to each other. The things ")
-    // ,
+    newText("<p><a href='https://e1.pcloud.link/publink/show?code=XZhJGzZeQhdKurBrCYLQU3JegWXAS2CxijX' target='_blank'>Click here to view the consent form.</a></p>")
+    ,
     newText("<p>Are you ready?</p>")
     ,
-    newText("Please type in your ID below.")
+    newText("Please type in your Prolific ID below.")
     ,
     newTextInput("inputID", "")
         .center()
@@ -64,7 +65,7 @@ newTrial("Instructions",
         )
     ,
     // Store the text from inputID into the Var element
-    getVar("inputID").set( getTextInput("inputID") )
+    getVar("ID").set( getTextInput("inputID") )
 )
 
 
@@ -114,9 +115,11 @@ newTrial("StoryIntro2",
     ,
     newText("<p> </p>")
     ,
-    newText("<b>Your job will then be to determine whether that answer is good, considering the question asked.</b>")
+    newText("<b>Your job will then be to determine whether that answer is appropriate, </b>")
     ,
-    newText("Using the keyboard, press '<b>F</b>' to <b>agree</b> and '<b>J</b> to <b>disagree</b>, that the answer is good.")
+    newText("<b>given the question asked.</b>")
+    ,
+    newText("Using the keyboard, press '<b>F</b>' to respond <b>NO</b> and '<b>J</b> to respond <b>YES</b>.")
     ,
     newText("<p> </p>")
     ,
@@ -157,6 +160,10 @@ Template( "train.csv", row =>
                 .center()
                 .print()
             ,
+            newText("(Hit the space bar to continue)")
+                .center()
+                .print()
+            ,
             newKey(" ")
                 // .log()
                 .wait()
@@ -166,12 +173,20 @@ Template( "train.csv", row =>
                 .center()
                 .print()
             ,
+            newText("(Hit the space bar to continue.)")
+                .center()
+                .print()
+            ,
             newKey(" ")
                 // .log()
                 .wait()
                 // .log()
             ,
             newText("Answerer", `<p><b>${row.Answerer} responds</b>:</p>`)
+                .center()
+                .print()
+            ,
+            newText("(Hit the space bar to continue)")
                 .center()
                 .print()
             ,
@@ -190,7 +205,7 @@ Template( "train.csv", row =>
                 .center()
                 .print()
             ,
-            newText("<p>Press <strong>F</strong> to <strong>Agree</strong> or <strong>J</strong> to <strong>Disagree</strong><p>")
+            newText("<p>Press <strong>F</strong> for <strong>NO</strong> or <strong>J</strong> for <strong>YES</strong><p>")
                 .center()
                 .print()
             ,
@@ -294,7 +309,7 @@ Template( "critical_specificQUD.csv", row =>
                 .center()
                 .print()
             ,
-            newText("<p> Press <strong>F</strong> to <strong>Agree</strong> or <strong>J</strong> to <strong>Disagree</strong><p>")
+            newText("<p> Press <strong>F</strong> for <strong>NO</strong> or <strong>J</strong> for <strong>YES</strong><p>")
                 .center()
                 .print()
             ,
@@ -360,7 +375,7 @@ Template( "fillers.csv", row =>
                 .center()
                 .print()
             ,
-            newText("<p> Press <strong>F</strong> to <strong>Agree</strong> or <strong>J</strong> to <strong>Disagree</strong><p>")
+            newText("<p> Press <strong>F</strong> for <strong>NO</strong> or <strong>J</strong> for <strong>YES</strong><p>")
                 .center()
                 .print()
             ,
@@ -381,6 +396,76 @@ Template( "fillers.csv", row =>
         .log( "Conj" , row.Conj )
 )
 
+
+newTrial("Demo",
+    defaultText.center().print()
+    ,
+    newText("Thanks! The experiment is over. Please take a couple moments to answer some demographic questions.")
+    ,
+    newText("What is your native language?")
+    ,
+    newTextInput("NativeLang", "")
+        .log()
+        .css("margin","2em")
+        .center()
+        .print()
+    ,
+    newText("Do you speak any other languages?")
+    ,
+    newTextInput("OtherLangs", "")
+        .log()
+        .css("margin","2em")
+        .center()
+        .print()
+    ,
+    newText("What is your gender?")
+    ,
+    newTextInput("Gender","")
+        .log()
+        .css("margin","2em")
+        .center()
+        .print()
+    ,
+    newText("What is your highest level of education?")
+    ,
+    newTextInput("Education", "")
+        .log()
+        .css("margin","2em")
+        .center()
+        .print()
+    ,
+    newText("Were there any problems with the experiment?")
+    ,
+    newTextInput("Problems", "")
+        .log()
+        .css("margin","2em")
+        .center()
+        .print()
+    ,
+    newText("Any other comments?")
+    ,
+    newTextInput("Comments", "")
+        .log()
+        .css("margin","2em")
+        .center()
+        .print()
+    ,
+    newText("warning", "Please enter your native language.")
+        .color("red")
+        .bold()
+        .remove()
+    ,
+    newButton("final", "Click to proceed to the completion screen.")
+        .center()
+        .print()
+        // Only validate a click on Start when inputID has been filled
+        .wait(  // Make sure the TextInput has been filled
+            getTextInput("NativeLang")
+                .testNot.text("")
+                .failure( getText("warning").print() )
+        )
+)
+
 // Final screen
 newTrial("end",
     newText("Thank you for your participation!")
@@ -388,7 +473,7 @@ newTrial("end",
         .print()
     ,
     // This link a placeholder: replace it with a URL provided by your participant-pooling platform
-    newText("<p><a href='https://www.pcibex.net/' target='_blank'>Click here to validate your submission</a></p>")
+    newText("<p><a href='https://app.prolific.co/submissions/complete?cc=1F57A165' target='_blank'>Click here to validate your submission</a></p>")
         .center()
         .print()
     ,

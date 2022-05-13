@@ -65,16 +65,23 @@ d <- read.pcibex("../data/results")
 ```
 
 ```{r}
-View(d )
+View(d)
+nrow(d) #760
 ```
 
 
 ```{r}
 d_fill = d %>%
-  filter(Type %in% c("test") & (Parameter == "Selection" | Value == "Start")) %>%
-  # mutate(Accurate = rep(Value[Parameter=="Selection"]==gsub("No-s","two", gsub("-s", "one", Ending[Parameter=="Selection"])), each=2)) %>%
-  group_by(ID, Group, SentType, Item.number) %>%
-  summarise( RT = mean(EventTime[Parameter=="Selection"] - EventTime[Value=="Start"]) , N = length(Value)/2, Value = Value[Parameter=="Selection"] )
+  # Filter to the important lines of the file
+  filter(Type %in% c("critical","filler") & (Parameter == "1" | Parameter == "2" | Parameter == "PressedKey")) %>%
+  summarize( RT_A = as.numeric(EventTime[Parameter=="2"]) - as.numeric(EventTime[Parameter=="1"]))
+
+View(d_fill)
+             # RT_B = as.numeric(Reading.time[Parameter=="2"] - Reading.time[Parameter=="1"]))
+  
+  
+  # select("Item.number","Type",)
+  # pivot_wider(names_from = c(), values_from = c())
 
 ```
 
