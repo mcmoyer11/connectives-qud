@@ -1,0 +1,314 @@
+---
+title: "Pre-processing Data from Connectives + QUD Study"
+author: Morgan Moyer
+date: May 12, 2022
+output: html_document
+---
+
+```{r setup, include=FALSE, warning=FALSE, echo=FALSE}
+library(ggplot2)
+library(lme4)
+library(lmerTest)
+library(multcomp) # not available for this version of R
+library(stringr)
+library(textstem)
+library(tidyverse)
+theme_set(theme_bw())
+cbPalette <- c("#56B4E9", "#D55E00", "#009E73","#999999", "#E69F00","#009E73","#56B4E9", "#D55E00", "#009E73","#999999", "#E69F00","#009E73","#56B4E9", "#D55E00", "#009E73","#999999", "#E69F00","#009E73","#56B4E9", "#D55E00", "#009E73","#999999", "#E69F00","#009E73")
+this.dir <- dirname(rstudioapi::getSourceEditorContext()$path)
+setwd(this.dir)
+# source("../../helpers.R")
+```
+
+
+```{r}
+read.pcibex <- function(filepath, auto.colnames=TRUE, fun.col=function(col,cols){cols[cols==col]<-paste(col,"Ibex",sep=".");return(cols)}) {
+  n.cols <- max(count.fields(filepath,sep=",",quote=NULL),na.rm=TRUE)
+  if (auto.colnames){
+    cols <- c()
+    con <- file(filepath, "r")
+    while ( TRUE ) {
+      line <- readLines(con, n = 1, warn=FALSE)
+      if ( length(line) == 0) {
+        break
+      }
+      m <- regmatches(line,regexec("^# (\\d+)\\. (.+)\\.$",line))[[1]]
+      if (length(m) == 3) {
+        index <- as.numeric(m[2])
+        value <- m[3]
+        if (index < length(cols)){
+          cols <- c()
+        }
+        if (is.function(fun.col)){
+          cols <- fun.col(value,cols)
+        }
+        cols[index] <- value
+        if (index == n.cols){
+          break
+        }
+      }
+    }
+    close(con)
+    return(read.csv(filepath, comment.char="#", header=FALSE, col.names=cols))
+  }
+  else{
+    return(read.csv(filepath, comment.char="#", header=FALSE, col.names=seq(1:n.cols)))
+  }
+}
+
+```
+
+
+```{r, run = FALSE}
+# User-defined function to read in PCIbex Farm results files
+read.pcibex <- function(filepath, auto.colnames=TRUE, fun.col=function(col,cols){cols[cols==col]<-paste(col,"Ibex",sep=".");return(cols)}) {
+  n.cols <- max(count.fields(filepath,sep=",",quote=NULL),na.rm=TRUE)
+  if (auto.colnames){
+    cols <- c()
+    con <- file(filepath, "r")
+    while ( TRUE ) {
+      line <- readLines(con, n = 1, warn=FALSE)
+      if ( length(line) == 0) {
+        break
+      }
+      m <- regmatches(line,regexec("^# (\\d+)\\. (.+)\\.$",line))[[1]]
+      if (length(m) == 3) {
+        index <- as.numeric(m[2])
+        value <- m[3]
+        if (is.function(fun.col)){
+         cols <- fun.col(value,cols)
+        }
+        cols[index] <- value
+        if (index == n.cols){
+          break
+        }
+      }
+    }
+    close(con)
+    return(read.csv(filepath, comment.char="#", header=FALSE, col.names=cols))
+  }
+  else{
+    return(read.csv(filepath, comment.char="#", header=FALSE, col.names=seq(1:n.cols)))
+  }
+}
+
+results <- read.pcibex("results.csv")
+```
+
+
+```{r}
+# REad in the results
+
+d <- read.pcibex("../data/results")
+```
+
+```{r}
+# View(d)
+nrow(d) #7521
+nrow(d) / 20 # 
+
+length(unique(d$ID)) # 33
+```
+
+# Take a look at comments and Problems
+```{r}
+unique(d$PennElementType)
+comments <- d %>% filter((PennElementType == "TextInput") & (PennElementName == "Comments"))
+unique(comments$Value)
+```
+
+```{r}
+comments <- d %>% filter((PennElementType == "TextInput") & (PennElementName == "Problems"))
+unique(comments$Value)
+```
+
+
+# Take a look at Demo Info
+```{r}
+comments <- d %>% filter((PennElementType == "TextInput") & (PennElementName == "NativeLang"))
+unique(comments$Value)
+```
+
+```{r}
+comments <- d %>% filter((PennElementType == "TextInput") & (PennElementName == "OtherLangs"))
+
+unique(comments$Value)
+
+
+```
+
+```{r}
+comments <- d %>% filter((PennElementType == "TextInput") & (PennElementName == "Gender"))
+unique(comments$Value)
+```
+
+# Filters
+
+## Take a look at accuracy on filters 13-24
+
+```{r}
+fillers_acc <- d %>% filter(Number >= 13) %>%
+# fillers_acc %>%
+  # For numbers 13-18 (Number <= 18)
+  # Pressed_key should be true / J
+  mutate(Accuracy = ifelse((Value[Parameter==PressedKey] == "J") & (Number <= 18), 1,0)) %>%
+  # For numbers 19-21 (Number >= 19)
+  # Pressed_key should be false / F
+  mutate(Accuracy = ifelse((Value[Parameter==PressedKey] == "F") & (Number >= 19), 1,0))
+
+```
+
+
+# Look at overall trial time
+```{r}
+d_trialTime = d %>%
+    filter(Type %in% c("critical","filler") & Parameter == "_Trial_" ) %>%
+    select(-c("Time.results.were.received","Controller.name","PennElementType","PennElementName")) %>%
+    group_by(ID.Ibex,Letters) %>%
+    summarise( trialRT = EventTime[Value=="End"] - EventTime[Value=="Start"]) 
+
+View(d_trialTime)
+
+```
+
+```{r}
+ggplot(d_trialTime, aes(x=trialRT)) +
+  geom_density(alpha = .4)
+  # geom_histogram(stat="count")
+
+```
+
+```{r}
+# Concat ID and Word columns together to the 
+d_trialTime$unique <- paste(d_trialTime$ID.Ibex,d_trialTime$Letters,sep="_")
+```
+
+
+# Look at the 
+```{r}
+d_wordTime <- d %>%
+  # Filter to the important lines of the file
+  filter(Type %in% c("critical","filler") & (PennElementName == "DashedSentence" | PennElementName == "select")) %>%
+  select(ID.Ibex,Letters,Type,TrialType,Number,AnswerRelevance,QUD,AnswerConj1,AnswerConj2,Conj,PennElementName,Reading.time,Value) 
+# %>% pivot_wider(names_from=PennElementName,values_from=Reading.time,names_repair="unique")
+
+# View(d_wordTime)
+```
+
+```{r}
+str(d_wordTime$PennElementName)
+
+# create a new column that differentiates between the two "dashedSentences" so 
+# as "chunk1" and "chunk2" so we can spread wide
+rename <- c("select","chunk1","chunk2")
+dWT <- cbind(rename,d_wordTime) 
+# creat a column with the unique combination of ID and item so that we can join
+# them together in a couple steps
+dWT$unique <- paste(d_wordTime$ID.Ibex,d_wordTime$Letters,sep="_")
+```
+
+```{r}
+# spread "rename" column with reading time values
+dWT_wide <- dWT %>%
+    group_by(ID.Ibex,Letters,Type,TrialType,Number,AnswerRelevance,QUD,AnswerConj1,AnswerConj2,Conj) %>%
+    pivot_wider(names_from=rename,values_from=Reading.time)
+
+# View(dWT_wide)
+```
+
+```{r}
+# collapse columns
+
+```
+
+
+  group_by(ID.Ibex,TrialType,Number,AnswerRelevance,Conj) %>%
+
+```{r}
+# joing the dfs together
+df <- left_join(dWT_wide,d_trialTime, by="unique")
+# View(df)
+# rename 'select' with 
+
+# replace "wait in dt_wide with the overall trial time
+
+# View(d_trialTime)
+```
+
+# Looing at chunk1
+```{r}
+df$chunk1 <- as.numeric(df$chunk1)
+
+# Look at the first chunk reading time
+df_chunk1 <- df %>%
+  filter((Type =="critical") & (!is.na(chunk1))) %>%
+  # is.numeric(chunk1) %>%
+  group_by(Number,Conj,AnswerRelevance) %>%
+  summarize(mean_C1RT = mean(chunk1))
+
+ggplot(df_chunk1,aes(x=mean_C1RT, fill=Conj)) +
+  facet_wrap(~AnswerRelevance) +
+  geom_density()
+```
+
+# Looking at chunk2
+```{r}
+df$chunk2 <- as.numeric(df$chunk2)
+
+# Look at the first chunk reading time
+df_chunk2 <- df %>%
+  filter((Type =="critical") & (!is.na(chunk2))) %>%
+  # is.numeric(chunk1) %>%
+  group_by(Number,Conj,AnswerRelevance) %>%
+  summarize(mean_C2RT = mean(chunk2))
+
+ggplot(df_chunk2,aes(x=mean_C2RT, fill=Conj)) +
+  facet_wrap(~AnswerRelevance) +
+  geom_density(alpha = .4)
+```
+
+# Looking at decision RT
+```{r}
+df$trialRT <- as.numeric(df$trialRT)
+
+# Look at the first chunk reading time
+df_chunk2 <- df %>%
+  filter(Type =="critical") %>%
+  # is.numeric(chunk1) %>%
+  group_by(Number,Conj,AnswerRelevance) %>%
+  summarize(mean_TrialRT = mean(trialRT))
+
+ggplot(df_chunk2,aes(x=mean_TrialRT, fill=Conj)) +
+  facet_wrap(~AnswerRelevance) +
+  geom_density()
+```
+
+# Looking at particular items
+
+```{r}
+df$chunk1 <- as.numeric(df$chunk1)
+df_crit <- df %>%
+  filter(Type=="critical" & !is.na(chunk1)) %>%
+  group_by(Conj,AnswerRelevance,TrialType) %>%
+  summarize(mean_RT1 = mean(chunk1))
+
+# View(df_crit)
+```
+
+```{r}
+ggplot(df_crit,aes(x=TrialType, y=mean_RT1, fill=Conj)) +
+  facet_wrap(~AnswerRelevance) +
+  geom_bar(position=position_dodge(.9),stat="identity")
+```
+
+```{r}
+df$chunk1 <- as.numeric(df$chunk1)
+df_crit <- df %>%
+  filter(Type=="critical" & !is.na(chunk1) & ) %>%
+  group_by(Conj,AnswerRelevance,TrialType) %>%
+  summarize(mean_RT1 = mean(trialRT))
+
+ggplot(df_crit,aes(x=TrialType, y=mean_RT1, fill=Conj)) +
+  facet_wrap(~AnswerRelevance) +
+  geom_bar(position=position_dodge(.9),stat="identity")
+```

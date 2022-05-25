@@ -269,7 +269,7 @@ newTrial("TrainEnd",
 )
 
 // critical test trials
-Template( "critical_specificQUD.csv", row =>
+Template( "critical_generalQUD.csv", row =>
         newTrial("critical",
             newText("Word", `<p>${row.Answerer} pulls out <b> ${row.Letters}</b>.</p>`)
                 .center()
