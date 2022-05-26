@@ -100,6 +100,14 @@ results <- read.pcibex("results.csv")
 # REad in the results
 
 d <- read.pcibex("../data/results")
+
+d$ID = as.factor(d$ID)
+d$Number = as.factor(d$Number)
+d$Number = as.factor(d$Number)
+d$Number = as.factor(d$Number)
+d$Number = as.factor(d$Number)
+d$Number = as.factor(d$Number)
+
 ```
 
 ```{r}
@@ -142,19 +150,98 @@ comments <- d %>% filter((PennElementType == "TextInput") & (PennElementName == 
 unique(comments$Value)
 ```
 
-# Filters
+# Fillers
 
-## Take a look at accuracy on filters 13-24
+## TRUE RESPONSE FILLERS
+```{r}
+facc <- d %>% filter(Number >= 13 & Number <=18)
+# For numbers 13-18 (Number <= 18) Pressed_key should be true / J
+facc$Accuracy = ifelse(facc$Value[facc$Parameter=="PressedKey"] == "J",1,0)
+
+agg <- facc %>%
+  select(ID, Number, Accuracy) %>%
+  group_by(ID) %>%
+  mutate(mean_accuracy = mean(Accuracy))
+
+dodge = position_dodge(.9)
+ggplot(data=agg, aes(x=reorder(ID,mean_accuracy),y=mean_accuracy,fill=ID)) +
+  geom_bar(position=dodge,stat="identity")
+
+```
+
+## FALSE RESPONSE FILLERS
+```{r}
+facc <- d %>% filter(Number <= 19)
+# For numbers 19-21 (Number >= 19) correct Pressed_key should be false / F
+facc$Accuracy = ifelse(facc$Value[facc$Parameter=="PressedKey"] == "F",1,0)
+
+agg <- facc %>%
+  select(ID, Number, Accuracy) %>%
+  group_by(ID) %>%
+  mutate(mean_accuracy = mean(Accuracy))
+
+dodge = position_dodge(.9)
+ggplot(data=agg, aes(x=reorder(ID,mean_accuracy),y=mean_accuracy,fill=ID)) +
+  geom_bar(position=dodge,stat="identity")
+
+```
+
+### create the accuracy column
+```{r}
+fillers_acc$ID = as.factor(fillers_acc$ID)
+fillers_acc$Number = as.factor(fillers_acc$Number)
+fillers_acc$Accuracy = as.numeric(fillers_acc$Accuracy)
+
+fillers_acc <- d %>% filter(Number >= 13) 
+
+# For numbers 13-18 (Number <= 18) Pressed_key should be true / J
+# For numbers 19-21 (Number >= 19) Pressed_key should be false / F
+fillers_acc$Accuracy = ifelse(((fillers_acc$Value[fillers_acc$Parameter=="PressedKey"] == "J") & (fillers_acc$Number <= 18)) | ((fillers_acc$Value[fillers_acc$Parameter=="PressedKey"] == "F") & (fillers_acc$Number >= 19)),1,0)
+
+View(fillers_acc)
+```
+
+## by item
+```{r}
+View(unique(fillers_acc$Number))
+agg <- fillers_acc %>%
+  select(ID, Number, Accuracy) %>%
+  group_by(Number) %>%
+  mutate(mean_accuracy = mean(Accuracy))
+View(agg)
+
+dodge = position_dodge(.9)
+ggplot(data=agg, aes(x=Number,y=mean_accuracy,fill=Number)) +
+  geom_bar(position=dodge,stat="identity")
+
+```
+
+## by subject
 
 ```{r}
-fillers_acc <- d %>% filter(Number >= 13) %>%
-# fillers_acc %>%
-  # For numbers 13-18 (Number <= 18)
-  # Pressed_key should be true / J
-  mutate(Accuracy = ifelse((Value[Parameter==PressedKey] == "J") & (Number <= 18), 1,0)) %>%
-  # For numbers 19-21 (Number >= 19)
-  # Pressed_key should be false / F
-  mutate(Accuracy = ifelse((Value[Parameter==PressedKey] == "F") & (Number >= 19), 1,0))
+agg <- fillers_acc %>%
+  select(ID, Number, Accuracy) %>%
+  group_by(ID) %>%
+  mutate(mean_accuracy = mean(Accuracy))
+View(agg)
+
+dodge = position_dodge(.9)
+ggplot(data=agg, aes(x=reorder(ID,mean_accuracy),y=mean_accuracy,fill=ID)) +
+  geom_bar(position=dodge,stat="identity")
+
+```
+
+
+```{r}
+agg <- fillers_acc %>%
+  select(ID, Number, Accuracy)
+
+nrow(agg)
+nrow(unique(agg$ID))
+
+dodge = position_dodge(.9)
+ggplot(data=agg, aes(x=reorder(ID,mean_accuracy),y=mean_accuracy)) +
+  geom_bar(position=dodge,stat="identity")
 
 ```
 
