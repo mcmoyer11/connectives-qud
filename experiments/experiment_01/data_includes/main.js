@@ -119,7 +119,7 @@ newTrial("StoryIntro2",
     ,
     newText("<b>given the question asked.</b>")
     ,
-    newText("Using the keyboard, press '<b>F</b>' to respond <b>NO</b> and '<b>J</b> to respond <b>YES</b>.")
+    newText("Using the keyboard, press '<b>F</b>' to respond <b>YES</b> and '<b>J</b> to respond <b>NO</b>.")
     ,
     newText("<p> </p>")
     ,
@@ -205,7 +205,7 @@ Template( "train.csv", row =>
                 .center()
                 .print()
             ,
-            newText("<p>Press <strong>F</strong> for <strong>NO</strong> or <strong>J</strong> for <strong>YES</strong><p>")
+            newText("<p>Press <strong>F</strong> for <strong>YES</strong> or <strong>J</strong> for <strong>NO</strong><p>")
                 .center()
                 .print()
             ,
@@ -309,7 +309,7 @@ Template( "critical_specificQUD.csv", row =>
                 .center()
                 .print()
             ,
-            newText("<p> Press <strong>F</strong> for <strong>NO</strong> or <strong>J</strong> for <strong>YES</strong><p>")
+            newText("<p> Press <strong>F</strong> for <strong>YES</strong> or <strong>J</strong> for <strong>NO</strong><p>")
                 .center()
                 .print()
             ,
@@ -375,7 +375,7 @@ Template( "fillers.csv", row =>
                 .center()
                 .print()
             ,
-            newText("<p> Press <strong>F</strong> for <strong>NO</strong> or <strong>J</strong> for <strong>YES</strong><p>")
+            newText("<p> Press <strong>F</strong> for <strong>YES</strong> or <strong>J</strong> for <strong>NO</strong><p>")
                 .center()
                 .print()
             ,

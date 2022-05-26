@@ -92,14 +92,14 @@ read.pcibex <- function(filepath, auto.colnames=TRUE, fun.col=function(col,cols)
   }
 }
 
-results <- read.pcibex("results.csv")
+# results <- read.pcibex("results.csv")
 ```
 
 
 ```{r}
 # REad in the results
 
-d <- read.pcibex("../data/results")
+d <- read.pcibex("../data/results_pilot3")
 
 d$ID = as.factor(d$ID)
 d$Number = as.factor(d$Number)
@@ -115,7 +115,7 @@ d$Number = as.factor(d$Number)
 nrow(d) #7521
 nrow(d) / 20 # 
 
-length(unique(d$ID)) # 33
+length(unique(d$ID)) # 43
 ```
 
 # Take a look at comments and Problems
