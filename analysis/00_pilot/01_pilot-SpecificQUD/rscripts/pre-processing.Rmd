@@ -1,5 +1,5 @@
 ---
-title: "Pre-processing Data from Connectives + QUD Study"
+title: "Pre-processing Data from Connectives + QUD Study - Specific"
 author: Morgan Moyer
 date: May 12, 2022
 output: html_document
@@ -17,7 +17,7 @@ theme_set(theme_bw())
 cbPalette <- c("#56B4E9", "#D55E00", "#009E73","#999999", "#E69F00","#009E73","#56B4E9", "#D55E00", "#009E73","#999999", "#E69F00","#009E73","#56B4E9", "#D55E00", "#009E73","#999999", "#E69F00","#009E73","#56B4E9", "#D55E00", "#009E73","#999999", "#E69F00","#009E73")
 this.dir <- dirname(rstudioapi::getSourceEditorContext()$path)
 setwd(this.dir)
-# source("../../helpers.R")
+source("../../../helpers.R")
 ```
 
 
@@ -102,20 +102,16 @@ read.pcibex <- function(filepath, auto.colnames=TRUE, fun.col=function(col,cols)
 d <- read.pcibex("../data/results_pilot3")
 
 d$ID = as.factor(d$ID)
-d$Number = as.factor(d$Number)
-d$Number = as.factor(d$Number)
-d$Number = as.factor(d$Number)
-d$Number = as.factor(d$Number)
-d$Number = as.factor(d$Number)
+
 
 ```
 
 ```{r}
 # View(d)
-nrow(d) #7521
-nrow(d) / 20 # 
+nrow(d) #7916
+nrow(d) / 20 # 395.8
 
-length(unique(d$ID)) # 43
+length(unique(d$ID)) # 33
 ```
 
 # Take a look at comments and Problems
@@ -155,8 +151,8 @@ unique(comments$Value)
 ## TRUE RESPONSE FILLERS
 ```{r}
 facc <- d %>% filter(Number >= 13 & Number <=18)
-# For numbers 13-18 (Number <= 18) Pressed_key should be true / J
-facc$Accuracy = ifelse(facc$Value[facc$Parameter=="PressedKey"] == "J",1,0)
+# For numbers 13-18 (Number <= 18) Pressed_key should be true / F
+facc$Accuracy = ifelse(facc$Value[facc$Parameter=="PressedKey"] == "F",1,0)
 
 agg <- facc %>%
   select(ID, Number, Accuracy) %>%
@@ -171,9 +167,9 @@ ggplot(data=agg, aes(x=reorder(ID,mean_accuracy),y=mean_accuracy,fill=ID)) +
 
 ## FALSE RESPONSE FILLERS
 ```{r}
-facc <- d %>% filter(Number <= 19)
-# For numbers 19-21 (Number >= 19) correct Pressed_key should be false / F
-facc$Accuracy = ifelse(facc$Value[facc$Parameter=="PressedKey"] == "F",1,0)
+facc <- d %>% filter(Number >= 19)
+# For numbers 19-21 (Number >= 19) correct Pressed_key should be false / J
+facc$Accuracy = ifelse(facc$Value[facc$Parameter=="PressedKey"] == "J",1,0)
 
 agg <- facc %>%
   select(ID, Number, Accuracy) %>%
@@ -187,7 +183,7 @@ ggplot(data=agg, aes(x=reorder(ID,mean_accuracy),y=mean_accuracy,fill=ID)) +
 ```
 
 ### create the accuracy column
-```{r}
+```{r, run=FALSE}
 fillers_acc$ID = as.factor(fillers_acc$ID)
 fillers_acc$Number = as.factor(fillers_acc$Number)
 fillers_acc$Accuracy = as.numeric(fillers_acc$Accuracy)
@@ -232,20 +228,6 @@ ggplot(data=agg, aes(x=reorder(ID,mean_accuracy),y=mean_accuracy,fill=ID)) +
 ```
 
 
-```{r}
-agg <- fillers_acc %>%
-  select(ID, Number, Accuracy)
-
-nrow(agg)
-nrow(unique(agg$ID))
-
-dodge = position_dodge(.9)
-ggplot(data=agg, aes(x=reorder(ID,mean_accuracy),y=mean_accuracy)) +
-  geom_bar(position=dodge,stat="identity")
-
-```
-
-
 # Look at overall trial time
 ```{r}
 d_trialTime = d %>%
@@ -255,7 +237,6 @@ d_trialTime = d %>%
     summarise( trialRT = EventTime[Value=="End"] - EventTime[Value=="Start"]) 
 
 View(d_trialTime)
-
 ```
 
 ```{r}
@@ -277,14 +258,12 @@ d_wordTime <- d %>%
   # Filter to the important lines of the file
   filter(Type %in% c("critical","filler") & (PennElementName == "DashedSentence" | PennElementName == "select")) %>%
   select(ID.Ibex,Letters,Type,TrialType,Number,AnswerRelevance,QUD,AnswerConj1,AnswerConj2,Conj,PennElementName,Reading.time,Value) 
-# %>% pivot_wider(names_from=PennElementName,values_from=Reading.time,names_repair="unique")
+
 
 # View(d_wordTime)
 ```
 
 ```{r}
-str(d_wordTime$PennElementName)
-
 # create a new column that differentiates between the two "dashedSentences" so 
 # as "chunk1" and "chunk2" so we can spread wide
 rename <- c("select","chunk1","chunk2")
@@ -304,23 +283,19 @@ dWT_wide <- dWT %>%
 ```
 
 ```{r}
-# collapse columns
-
-```
-
-
-  group_by(ID.Ibex,TrialType,Number,AnswerRelevance,Conj) %>%
-
-```{r}
 # joing the dfs together
 df <- left_join(dWT_wide,d_trialTime, by="unique")
-# View(df)
-# rename 'select' with 
-
-# replace "wait in dt_wide with the overall trial time
-
 # View(d_trialTime)
 ```
+
+# Add negation as a factor column
+negation items: 1, 2, 7, 8
+no negation: 3, 4, 5, 6, 9, 10, 11, 12 
+```{r}
+
+df$Negation <- ifelse(df$Number %in% c("1","2","7","8"),"yes","no")
+```
+
 
 # Looing at chunk1
 ```{r}
@@ -337,6 +312,33 @@ ggplot(df_chunk1,aes(x=mean_C1RT, fill=Conj)) +
   facet_wrap(~AnswerRelevance) +
   geom_density()
 ```
+
+## and negation
+```{r}
+df_chunk1 <- df %>%
+  filter((Type =="critical") & (!is.na(chunk1))) %>%
+  # is.numeric(chunk1) %>%
+  group_by(Conj,AnswerRelevance,Negation) %>%
+  summarize(meanRT_chunk1 = mean(chunk1), CILow = ci.low(meanRT_chunk1), CIHigh = ci.high(meanRT_chunk1)) %>%
+  mutate(YMin = meanRT_chunk1 - CILow, YMax = meanRT_chunk1 + CIHigh)
+
+
+df_chunk1$YMin <- df_chunk1$meanRT_chunk1 - ci.low(df_chunk1$meanRT_chunk1)
+df_chunk1$YMax <- df_chunk1$meanRT_chunk1 + ci.high(df_chunk1$meanRT_chunk1)
+View(df_chunk1)
+
+dodge <- position_dodge(.9)
+ggplot(df_chunk1,aes(x=Conj, y=meanRT_chunk1, fill=Negation)) +
+  facet_wrap(~AnswerRelevance) +
+  geom_bar(position=dodge,stat="identity") +
+  geom_errorbar(aes(ymin=YMin,ymax=YMax),width=.25,position=dodge) +
+  # scale_fill_manual(values=cbPalette) +
+  # scale_color_manual(values=cbPalette) +
+  ggtitle("mean RT for first chunk, General QUD Condition")
+```
+
+
+
 
 # Looking at chunk2
 ```{r}
@@ -355,6 +357,7 @@ ggplot(df_chunk2,aes(x=mean_C2RT, fill=Conj)) +
 ```
 
 # Looking at decision RT
+--> this needs to be after chunk2 time not overall trial rt and 
 ```{r}
 df$trialRT <- as.numeric(df$trialRT)
 
@@ -391,7 +394,7 @@ ggplot(df_crit,aes(x=TrialType, y=mean_RT1, fill=Conj)) +
 ```{r}
 df$chunk1 <- as.numeric(df$chunk1)
 df_crit <- df %>%
-  filter(Type=="critical" & !is.na(chunk1) & ) %>%
+  filter(Type=="critical" & !is.na(chunk1) ) %>%
   group_by(Conj,AnswerRelevance,TrialType) %>%
   summarize(mean_RT1 = mean(trialRT))
 
