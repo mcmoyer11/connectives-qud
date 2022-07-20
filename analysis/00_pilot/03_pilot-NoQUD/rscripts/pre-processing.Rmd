@@ -1,7 +1,7 @@
 ---
-title: "Pre-processing Data from Connectives + QUD Study - Specific"
+title: "Pre-processing Data from Connectives + QUD Study - No QUD"
 author: Morgan Moyer
-date: May 12, 2022
+date: July 12, 2022
 output: html_document
 ---
 
@@ -62,7 +62,7 @@ read.pcibex <- function(filepath, auto.colnames=TRUE, fun.col=function(col,cols)
 ```{r}
 # REad in the results
 
-d <- read.pcibex("../data/results_pilot3")
+d <- read.pcibex("../data/results")
 
 d$ID = as.factor(d$ID)
 
@@ -71,10 +71,10 @@ d$ID = as.factor(d$ID)
 
 ```{r}
 # View(d)
-nrow(d) #7916
-nrow(d) / 20 # 395.8
+nrow(d) #7920
+nrow(d) / 20 # 396
 
-length(unique(d$ID)) # 33
+length(unique(d$ID)) # 37
 ```
 
 # Take a look at comments and Problems
@@ -177,13 +177,6 @@ fillers_acc$Accuracy = ifelse(((fillers_acc$Value[fillers_acc$Parameter=="Presse
 
 # View(fillers_acc)
 ```
-
-
-```{r, eval=FALSE}
-# Remove subjects whose accuracy falls below 75%
-
-```
-
 
 # Look at overall trial time
 ```{r}
@@ -313,7 +306,7 @@ df_chunk1 <- df.c1.outliers.removed %>%
 
 df_chunk1$YMin <- df_chunk1$meanRT_chunk1 - ci.low(df_chunk1$meanRT_chunk1)
 df_chunk1$YMax <- df_chunk1$meanRT_chunk1 + ci.high(df_chunk1$meanRT_chunk1)
-View(df_chunk1)
+# View(df_chunk1)
 
 dodge <- position_dodge(.9)
 ggplot(df_chunk1,aes(x=Conj, y=meanRT_chunk1, fill=Negation)) +
@@ -322,7 +315,7 @@ ggplot(df_chunk1,aes(x=Conj, y=meanRT_chunk1, fill=Negation)) +
   geom_errorbar(aes(ymin=YMin,ymax=YMax),width=.25,position=dodge) +
   # scale_fill_manual(values=cbPalette) +
   # scale_color_manual(values=cbPalette) +
-  ggtitle("mean RT for first chunk, Specific QUD Condition")
+  ggtitle("mean RT for first chunk, NO QUD Condition")
 ```
 
 ## Looking at particular items
@@ -348,8 +341,9 @@ ggplot(df_chunk1,aes(x=Number, y=meanRT_chunk1, fill=Conj)) +
   geom_errorbar(aes(ymin=YMin,ymax=YMax),width=.25,position=dodge) +
   # scale_fill_manual(values=cbPalette) +
   # scale_color_manual(values=cbPalette) +
-  ggtitle("mean RT for first chunk, Specific QUD Condition")
+  ggtitle("mean RT for first chunk, General QUD Condition")
 ```
+
 
 # Chunk2
 
@@ -422,7 +416,7 @@ ggplot(df_chunk2,aes(x=Conj, y=meanRT_chunk2, fill=Negation)) +
   geom_errorbar(aes(ymin=YMin,ymax=YMax),width=.25,position=dodge) +
   # scale_fill_manual(values=cbPalette) +
   # scale_color_manual(values=cbPalette) +
-  ggtitle("mean RT for second chunk, Specific QUD Condition")
+  ggtitle("mean RT for second chunk, General QUD Condition")
 ```
 
 ## Looking at particular items
@@ -448,8 +442,9 @@ ggplot(df_chunk2,aes(x=Number, y=meanRT_chunk2, fill=Conj)) +
   geom_errorbar(aes(ymin=YMin,ymax=YMax),width=.25,position=dodge) +
   # scale_fill_manual(values=cbPalette) +
   # scale_color_manual(values=cbPalette) +
-  ggtitle("mean RT for first chunk, Specific QUD Condition")
+  ggtitle("mean RT for first chunk, General QUD Condition")
 ```
+
 
 # Looking at decision RT
 --> this needs to be after chunk2 time not overall trial rt and 

@@ -144,7 +144,7 @@ newTrial("StoryIntro2",
 
     
 // Training trials
-Template( "train.csv", row =>
+Template( "training_noQUD.csv", row =>
         newTrial("training",
             newText(`<p><b> PRACTICE</b>.</p>`)
                 .center()
@@ -250,7 +250,7 @@ newTrial("TrainEnd",
 )
 
 // critical test trials
-Template( "critical_generalQUD.csv", row =>
+Template( "critical_noQUD.csv", row =>
         newTrial("critical",
             newText("Word", `<p>${row.Answerer} pulls out <b> ${row.Letters}</b>.</p>`)
                 .center()
@@ -307,7 +307,7 @@ Template( "critical_generalQUD.csv", row =>
 )
 
 // fillers
-Template( "fillers.csv", row =>
+Template( "fillers_noQUD.csv", row =>
         newTrial("fillers",
             newText("Word", `<p>${row.Answerer} pulls out <b> ${row.Letters}</b>.</p>`)
                 .center()

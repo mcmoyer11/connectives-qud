@@ -1,5 +1,5 @@
 ---
-title: "Pre-processing Data from Connectives + QUD Study - Specific"
+title: "Pre-processing Data from Connectives + QUD Study - General"
 author: Morgan Moyer
 date: May 12, 2022
 output: html_document
@@ -71,10 +71,10 @@ d$ID = as.factor(d$ID)
 
 ```{r}
 # View(d)
-nrow(d) #7919
-nrow(d) / 20 # 395.95
+nrow(d) #7916
+nrow(d) / 20 # 395.8
 
-length(unique(d$ID)) # 32
+length(unique(d$ID)) # 33
 ```
 
 # Take a look at comments and Problems
@@ -109,15 +109,17 @@ comments <- d %>% filter((PennElementType == "TextInput") & (PennElementName == 
 unique(comments$Value)
 ```
 
+
+
 # Fillers
 
 ## TRUE RESPONSE FILLERS
 ```{r}
-facc <- d %>% filter(Number >= 13 & Number <=18)
-# For numbers 13-18 (Number <= 18) Pressed_key should be true / J
-facc$Accuracy = ifelse(facc$Value[facc$Parameter=="PressedKey"] == "J",1,0)
+facc_pos <- d %>% filter(Number >= 13 & Number <=18)
+# For numbers 13-18 (Number <= 18) Pressed_key should be true / F
+facc_pos$Accuracy = ifelse(facc_pos$Value[facc_pos$Parameter=="PressedKey"] == "J",1,0)
 
-agg <- facc %>%
+agg <- facc_pos %>%
   select(ID, Number, Accuracy) %>%
   group_by(ID) %>%
   mutate(mean_accuracy = mean(Accuracy))
@@ -130,11 +132,11 @@ ggplot(data=agg, aes(x=reorder(ID,mean_accuracy),y=mean_accuracy,fill=ID)) +
 
 ## FALSE RESPONSE FILLERS
 ```{r}
-facc <- d %>% filter(Number >= 19)
-# For numbers 19-21 (Number >= 19) correct Pressed_key should be false / F
-facc$Accuracy = ifelse(facc$Value[facc$Parameter=="PressedKey"] == "F",1,0)
+facc_neg <- d %>% filter(Number >= 19)
+# For numbers 19-21 (Number >= 19) correct Pressed_key should be false / J
+facc_neg$Accuracy = ifelse(facc_neg$Value[facc_neg$Parameter=="PressedKey"] == "F",1,0)
 
-agg <- facc %>%
+agg <- facc_neg %>%
   select(ID, Number, Accuracy) %>%
   group_by(ID) %>%
   mutate(mean_accuracy = mean(Accuracy))
@@ -145,65 +147,36 @@ ggplot(data=agg, aes(x=reorder(ID,mean_accuracy),y=mean_accuracy,fill=ID)) +
 
 ```
 
-### create the accuracy column
-```{r, run=FALSE}
+### Look overall by-subject mean accuracy on fillers
+```{r}
+facc = rbind(facc_neg,facc_pos)
+nrow(facc_pos)
+# View(facc)
+agg <- facc %>%
+  select(ID, Number, Accuracy) %>%
+  group_by(ID) %>%
+  summarize(mean_accuracy = mean(Accuracy))
+# View(agg)
+
+dodge = position_dodge(.9)
+ggplot(data=agg, aes(x=reorder(ID,mean_accuracy),y=mean_accuracy,fill=ID)) +
+  geom_bar(position=dodge,stat="identity")
+```
+
+
+### create one accuracy column
+```{r, eval=FALSE}
 fillers_acc$ID = as.factor(fillers_acc$ID)
-fillers_acc$Number = as.factor(fillers_acc$Number)
 fillers_acc$Accuracy = as.numeric(fillers_acc$Accuracy)
 
 fillers_acc <- d %>% filter(Number >= 13) 
 
-# For numbers 13-18 (Number <= 18) Pressed_key should be true / J
-# For numbers 19-21 (Number >= 19) Pressed_key should be false / F
-fillers_acc$Accuracy = ifelse(((fillers_acc$Value[fillers_acc$Parameter=="PressedKey"] == "J") & (fillers_acc$Number <= 18)) | ((fillers_acc$Value[fillers_acc$Parameter=="PressedKey"] == "F") & (fillers_acc$Number >= 19)),1,0)
+# For numbers 13-18 (Number <= 18) Pressed_key should be true / F
+# For numbers 19-21 (Number >= 19) Pressed_key should be false / J
+fillers_acc$Accuracy = ifelse(((fillers_acc$Value[fillers_acc$Parameter=="PressedKey"] == "F") & (fillers_acc$Number <= 18)) | ((fillers_acc$Value[fillers_acc$Parameter=="PressedKey"] == "J") & (fillers_acc$Number >= 19)),1,0)
 
-View(fillers_acc)
+# View(fillers_acc)
 ```
-
-## by item
-```{r}
-View(unique(fillers_acc$Number))
-agg <- fillers_acc %>%
-  select(ID, Number, Accuracy) %>%
-  group_by(Number) %>%
-  mutate(mean_accuracy = mean(Accuracy))
-View(agg)
-
-dodge = position_dodge(.9)
-ggplot(data=agg, aes(x=Number,y=mean_accuracy,fill=Number)) +
-  geom_bar(position=dodge,stat="identity")
-
-```
-
-## by subject
-
-```{r}
-agg <- fillers_acc %>%
-  select(ID, Number, Accuracy) %>%
-  group_by(ID) %>%
-  mutate(mean_accuracy = mean(Accuracy))
-View(agg)
-
-dodge = position_dodge(.9)
-ggplot(data=agg, aes(x=reorder(ID,mean_accuracy),y=mean_accuracy,fill=ID)) +
-  geom_bar(position=dodge,stat="identity")
-
-```
-
-
-```{r}
-agg <- fillers_acc %>%
-  select(ID, Number, Accuracy)
-
-nrow(agg)
-nrow(unique(agg$ID))
-
-dodge = position_dodge(.9)
-ggplot(data=agg, aes(x=reorder(ID,mean_accuracy),y=mean_accuracy)) +
-  geom_bar(position=dodge,stat="identity")
-
-```
-
 
 # Look at overall trial time
 ```{r}
@@ -213,7 +186,7 @@ d_trialTime = d %>%
     group_by(ID.Ibex,Letters) %>%
     summarise( trialRT = EventTime[Value=="End"] - EventTime[Value=="Start"]) 
 
-View(d_trialTime)
+# View(d_trialTime)
 ```
 
 ```{r}
@@ -265,21 +238,45 @@ df <- left_join(dWT_wide,d_trialTime, by="unique")
 # View(d_trialTime)
 ```
 
-# Add negation as a factor column
-negation items: 1, 2, 7, 8
-no negation: 3, 4, 5, 6, 9, 10, 11, 12 
+
+
+
+# Remove outlier subjects 
 ```{r}
 
-df$Negation <- ifelse(df$Number %in% c("1","2","7","8"),"yes","no")
+df$chunk1 <- as.factor(df$chunk1)
+df.c1.sub <- df %>%
+  filter(!is.na(chunk1))
+
+df.c1.sub$chunk1 <- as.numeric(df.c1.sub$chunk1)
+str(df.c1.sub$chunk1)
+summary(df.c1.sub$chunk1)
+mean(df.c1.sub$chunk1)
+sd(df.c1.sub$chunk1)
+range(df.c1.sub$chunk1)
+
+h<-hist(df.c1.sub$chunk1, breaks=20, col="red", xlab="RT (ms)",
+        main="Histogram with Normal Curve")
+
+quantile(df.c1.sub$chunk1)[4] + IQR(df.c1.sub$chunk1)*3 # 875.75
+
+# remove subjects with RT higher than 3 x IQR
+df.c1.outliers.removed <- subset(df.c1.sub, df.c1.sub$chunk1 < 875.75)
+
+hist(df.c1.outliers.removed$chunk1, col="red", xlab="RT (ms)",
+        main="Histogram with Normal Curve")
+
 ```
+
+
+
 
 
 # Looing at chunk1
 ```{r}
-df$chunk1 <- as.numeric(df$chunk1)
 
 # Look at the first chunk reading time
-df_chunk1 <- df %>%
+df_chunk1 <- df.c1.outliers.removed %>%
   filter((Type =="critical") & (!is.na(chunk1))) %>%
   # is.numeric(chunk1) %>%
   group_by(Number,Conj,AnswerRelevance) %>%
@@ -290,10 +287,17 @@ ggplot(df_chunk1,aes(x=mean_C1RT, fill=Conj)) +
   geom_density()
 ```
 
-## and negation
+## Add negation as a factor column
+negation items: 1, 2, 7, 8
+no negation: 3, 4, 5, 6, 9, 10, 11, 12 
 ```{r}
-df_chunk1 <- df %>%
-  filter((Type =="critical") & (!is.na(chunk1))) %>%
+
+df.c1.outliers.removed$Negation <- ifelse(df.c1.outliers.removed$Number %in% c("1","2","7","8"),"yes","no")
+```
+
+```{r}
+df_chunk1 <- df.c1.outliers.removed %>%
+  filter(Type =="critical") %>%
   # is.numeric(chunk1) %>%
   group_by(Conj,AnswerRelevance,Negation) %>%
   summarize(meanRT_chunk1 = mean(chunk1), CILow = ci.low(meanRT_chunk1), CIHigh = ci.high(meanRT_chunk1)) %>%
@@ -311,5 +315,151 @@ ggplot(df_chunk1,aes(x=Conj, y=meanRT_chunk1, fill=Negation)) +
   geom_errorbar(aes(ymin=YMin,ymax=YMax),width=.25,position=dodge) +
   # scale_fill_manual(values=cbPalette) +
   # scale_color_manual(values=cbPalette) +
-  ggtitle("mean RT for first chunk, Specific QUD Condition")
+  ggtitle("mean RT for first chunk, General QUD Condition")
 ```
+
+## Looking at particular items
+
+```{r}
+df.c1.outliers.removed$Number <- as.factor(df.c1.outliers.removed$Number)
+df_chunk1 <- df.c1.outliers.removed %>%
+  filter(Type =="critical") %>%
+  # is.numeric(chunk1) %>%
+  group_by(Number,Conj) %>%
+  summarize(meanRT_chunk1 = mean(chunk1), CILow = ci.low(meanRT_chunk1), CIHigh = ci.high(meanRT_chunk1)) %>%
+  mutate(YMin = meanRT_chunk1 - CILow, YMax = meanRT_chunk1 + CIHigh)
+
+
+df_chunk1$YMin <- df_chunk1$meanRT_chunk1 - ci.low(df_chunk1$meanRT_chunk1)
+df_chunk1$YMax <- df_chunk1$meanRT_chunk1 + ci.high(df_chunk1$meanRT_chunk1)
+
+
+dodge <- position_dodge(.9)
+ggplot(df_chunk1,aes(x=Number, y=meanRT_chunk1, fill=Conj)) +
+  # facet_wrap(~Number) +
+  geom_bar(position=dodge,stat="identity") +
+  geom_errorbar(aes(ymin=YMin,ymax=YMax),width=.25,position=dodge) +
+  # scale_fill_manual(values=cbPalette) +
+  # scale_color_manual(values=cbPalette) +
+  ggtitle("mean RT for first chunk, General QUD Condition")
+```
+
+
+# Chunk2
+
+## remove outliers
+```{r}
+
+df$chunk2 <- as.factor(df$chunk2)
+df.c2.sub <- df %>%
+  filter(!is.na(chunk2))
+
+df.c2.sub$chunk2 <- as.numeric(df.c2.sub$chunk2)
+str(df.c2.sub$chunk2)
+summary(df.c2.sub$chunk2)
+mean(df.c2.sub$chunk2)
+sd(df.c2.sub$chunk2)
+range(df.c2.sub$chunk2)
+
+h<-hist(df.c2.sub$chunk2, breaks=20, col="red", xlab="RT (ms)",
+        main="Histogram with Normal Curve")
+
+quantile(df.c2.sub$chunk2)[4] + IQR(df.c2.sub$chunk2)*3 # 991.75
+
+# remove subjects with RT higher than 3 x IQR
+df.c2.outliers.removed <- subset(df.c2.sub, df.c2.sub$chunk2 < 991.75)
+
+hist(df.c2.outliers.removed$chunk2, col="red", xlab="RT (ms)",
+        main="Histogram with Normal Curve")
+
+```
+
+```{r}
+
+# Look at the first chunk reading time
+df_chunk2 <- df.c2.outliers.removed %>%
+  filter(Type =="critical") %>%
+  # is.numeric(chunk1) %>%
+  group_by(Number,Conj,AnswerRelevance) %>%
+  summarize(mean_C2RT = mean(chunk2))
+
+ggplot(df_chunk2,aes(x=mean_C2RT, fill=Conj)) +
+  facet_wrap(~AnswerRelevance) +
+  geom_density(alpha = .4)
+```
+
+## Add negation as a factor column
+negation items: 1, 2, 7, 8
+no negation: 3, 4, 5, 6, 9, 10, 11, 12 
+```{r}
+
+df.c2.outliers.removed$Negation <- ifelse(df.c2.outliers.removed$Number %in% c("2","2","7","8"),"yes","no")
+```
+
+```{r}
+df_chunk2 <- df.c2.outliers.removed %>%
+  filter(Type =="critical") %>%
+  # is.numeric(chunk2) %>%
+  group_by(Conj,AnswerRelevance,Negation) %>%
+  summarize(meanRT_chunk2 = mean(chunk2), CILow = ci.low(meanRT_chunk2), CIHigh = ci.high(meanRT_chunk2)) %>%
+  mutate(YMin = meanRT_chunk2 - CILow, YMax = meanRT_chunk2 + CIHigh)
+
+
+df_chunk2$YMin <- df_chunk2$meanRT_chunk2 - ci.low(df_chunk2$meanRT_chunk2)
+df_chunk2$YMax <- df_chunk2$meanRT_chunk2 + ci.high(df_chunk2$meanRT_chunk2)
+
+
+dodge <- position_dodge(.9)
+ggplot(df_chunk2,aes(x=Conj, y=meanRT_chunk2, fill=Negation)) +
+  facet_wrap(~AnswerRelevance) +
+  geom_bar(position=dodge,stat="identity") +
+  geom_errorbar(aes(ymin=YMin,ymax=YMax),width=.25,position=dodge) +
+  # scale_fill_manual(values=cbPalette) +
+  # scale_color_manual(values=cbPalette) +
+  ggtitle("mean RT for second chunk, General QUD Condition")
+```
+
+## Looking at particular items
+
+```{r}
+df.c2.outliers.removed$Number <- as.factor(df.c2.outliers.removed$Number)
+df_chunk2 <- df.c2.outliers.removed %>%
+  filter(Type =="critical") %>%
+  # is.numeric(chunk2) %>%
+  group_by(Number,Conj) %>%
+  summarize(meanRT_chunk2 = mean(chunk2), CILow = ci.low(meanRT_chunk2), CIHigh = ci.high(meanRT_chunk2)) %>%
+  mutate(YMin = meanRT_chunk2 - CILow, YMax = meanRT_chunk2 + CIHigh)
+
+
+df_chunk2$YMin <- df_chunk2$meanRT_chunk2 - ci.low(df_chunk2$meanRT_chunk2)
+df_chunk2$YMax <- df_chunk2$meanRT_chunk2 + ci.high(df_chunk2$meanRT_chunk2)
+
+
+dodge <- position_dodge(.9)
+ggplot(df_chunk2,aes(x=Number, y=meanRT_chunk2, fill=Conj)) +
+  # facet_wrap(~Number) +
+  geom_bar(position=dodge,stat="identity") +
+  geom_errorbar(aes(ymin=YMin,ymax=YMax),width=.25,position=dodge) +
+  # scale_fill_manual(values=cbPalette) +
+  # scale_color_manual(values=cbPalette) +
+  ggtitle("mean RT for first chunk, General QUD Condition")
+```
+
+
+# Looking at decision RT
+--> this needs to be after chunk2 time not overall trial rt and 
+```{r, run = FALSE}
+df$trialRT <- as.numeric(df$trialRT)
+
+# Look at the first chunk reading time
+df_chunk2 <- df %>%
+  filter(Type =="critical") %>%
+  # is.numeric(chunk1) %>%
+  group_by(Number,Conj,AnswerRelevance) %>%
+  summarize(mean_TrialRT = mean(trialRT))
+
+ggplot(df_chunk2,aes(x=mean_TrialRT, fill=Conj)) +
+  facet_wrap(~AnswerRelevance) +
+  geom_density()
+```
+
