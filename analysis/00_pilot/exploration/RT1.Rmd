@@ -1,0 +1,548 @@
+---
+title: "Connectives + QUD Study: RT 1"
+author: Morgan Moyer
+date: July 12, 2022
+output: html_document
+---
+
+```{r setup, include=FALSE, warning=FALSE, echo=FALSE}
+library(ggplot2)
+library(lme4)
+library(lmerTest)
+library(multcomp) # not available for this version of R
+library(stringr)
+library(textstem)
+library(tidyverse)
+theme_set(theme_bw())
+cbPalette <- c("#56B4E9", "#D55E00", "#009E73","#999999", "#E69F00","#009E73","#56B4E9", "#D55E00", "#009E73","#999999", "#E69F00","#009E73","#56B4E9", "#D55E00", "#009E73","#999999", "#E69F00","#009E73","#56B4E9", "#D55E00", "#009E73","#999999", "#E69F00","#009E73")
+```
+
+```{r set wd and read in all the data, include=FALSE, warning=FALSE, echo=FALSE, message=FALSE}
+this.dir <- dirname(rstudioapi::getSourceEditorContext()$path)
+setwd(this.dir)
+source("../../helpers.R")
+
+s <- read.csv("../01_pilot-SpecificQUD/data/processed.csv")
+s$QUDType <- "Specific"
+
+g <- read.csv("../02_pilot-GeneralQUD/data/processed.csv")
+g$QUDType <- "General"
+
+n <- read.csv("../03_pilot-NoQUD/data/processed.csv")
+n$QUDType <- "None"
+
+d <- rbind(s,g,n)
+d$chunk1 <- as.numeric(d$chunk1)
+```
+
+```{r}
+names(d)
+nrow(d) #1440
+
+length(unique(d$ID)) # 60 --> 48
+```
+
+# add the mention/not mention factor
+```{r}
+d$Mention <- ""
+d$Mention[(d$Number == "1") |
+            (d$Number == "2") |
+            (d$Number == "7") |
+            (d$Number == "8")] <- "Mentioned"
+
+d$Mention[(d$Number == "3") |
+            (d$Number == "4") |
+            (d$Number == "5") |
+            (d$Number == "6") |
+            (d$Number == "9") |
+            (d$Number == "10") |
+            (d$Number == "11") |
+            (d$Number == "12")] <- "NotMentioned"
+
+
+
+d$AnswerQUDRelevant <- ""
+d$AnswerQUDRelevant[(d$Number == "1") |
+            (d$Number == "2") |
+            (d$Number == "11") |
+            (d$Number == "12")] <- "NotQUDRelevant"
+
+d$AnswerQUDRelevant[(d$Number == "3") |
+            (d$Number == "4") |
+            (d$Number == "5") |
+            (d$Number == "6") |
+            (d$Number == "7") |
+            (d$Number == "8") |
+            (d$Number == "9") |
+            (d$Number == "10")] <- "QUDRelevant"
+
+```
+
+
+# Denisty
+
+## QUD (raw RT)
+```{r}
+agr <- d %>%
+  filter(Type =="critical") %>%
+  # is.numeric(chunk1) %>%
+  group_by(Letters,Conj,QUDType) %>% #AnswerQUDRelevant,Mention,QUDType
+  summarize(meanRT = mean(chunk1)) 
+  # mutate(YMin = meanLogRT - CILow, YMax = meanLogRT + CIHigh)
+
+ggplot(agr, aes(x = meanRT, fill=Conj, color=Conj)) +
+  geom_density(alpha = .4) +
+  facet_wrap(~QUDType)
+# ggsave("graphs/denisty_QUD_rawRT.pdf",width=7,height=2)
+
+ggplot(agr, aes(x=Conj, y=meanRT,fill=Conj, color=Conj)) + 
+  geom_violin(trim=FALSE,alpha=.4) +
+  geom_jitter(shape=16, position=position_jitter(0.2)) +
+  facet_wrap(~QUDType)
+```
+
+
+```{r}
+agr <- d %>%
+  filter(Type =="critical") %>%
+  group_by(QUDType,Conj) %>%
+  summarize(meanRT = mean(chunk1), CILow = ci.low(chunk1), CIHigh = ci.high(chunk1)) %>%
+  mutate(YMin = meanRT - CILow, YMax = meanRT + CIHigh)
+
+dodge <- position_dodge(.9)
+ggplot(agr,aes(x=Conj, y=meanRT, fill=QUDType)) +
+  # facet_grid(Mention~AnswerQUDRelevant) +
+  geom_bar(position=dodge,stat="identity") +
+  geom_errorbar(aes(ymin=YMin,ymax=YMax),width=.25,position=dodge) +
+  # scale_fill_manual(values=cbPalette) +
+  # scale_color_manual(values=cbPalette) +
+  ggtitle("mean RT for first chunk")
+```
+
+
+
+## QUD x AnswerQUDRelevant (raw RT)
+```{r}
+agr <- d %>%
+  filter(Type =="critical") %>%
+  # is.numeric(chunk1) %>%
+  group_by(Letters,Conj,QUDType,AnswerQUDRelevant) %>% #,Mention
+  summarize(meanRT = mean(chunk1)) 
+  # mutate(YMin = meanLogRT - CILow, YMax = meanLogRT + CIHigh)
+
+ggplot(agr, aes(x = meanRT, fill=Conj, color=Conj)) +
+  geom_density(alpha = .4) +
+  facet_grid(AnswerQUDRelevant~QUDType)
+# ggsave("graphs/denisty_QUDxRelevance_rawRT.pdf",width=6,height=3)
+
+ggplot(agr, aes(x=Conj, y=meanRT,fill=Conj, color=Conj)) + 
+  geom_violin(trim=FALSE,alpha=.4) +
+  geom_jitter(shape=16, position=position_jitter(0.2)) +
+  facet_grid(AnswerQUDRelevant~QUDType)
+```
+
+```{r}
+agr <- d %>%
+  filter(Type =="critical") %>%
+  group_by(QUDType,Conj,AnswerQUDRelevant) %>%
+  summarize(meanRT = mean(chunk1), CILow = ci.low(chunk1), CIHigh = ci.high(chunk1)) %>%
+  mutate(YMin = meanRT - CILow, YMax = meanRT + CIHigh)
+
+dodge <- position_dodge(.9)
+ggplot(agr,aes(x=Conj, y=meanRT, fill=QUDType)) +
+  facet_wrap(~AnswerQUDRelevant) +
+  geom_bar(position=dodge,stat="identity") +
+  geom_errorbar(aes(ymin=YMin,ymax=YMax),width=.25,position=dodge) +
+  # scale_fill_manual(values=cbPalette) +
+  # scale_color_manual(values=cbPalette) +
+  ggtitle("mean RT for first chunk")
+```
+
+## QUD x Mention (raw RT)
+```{r}
+agr <- d %>%
+  filter(Type =="critical") %>%
+  # is.numeric(chunk1) %>%
+  group_by(Letters,Conj,QUDType,Mention) %>% #,Mention
+  summarize(meanRT = mean(chunk1)) 
+  # mutate(YMin = meanLogRT - CILow, YMax = meanLogRT + CIHigh)
+
+ggplot(agr, aes(x = meanRT, fill=Conj, color=Conj)) +
+  geom_density(alpha = .4) +
+  facet_grid(Mention~QUDType)
+
+# ggsave("graphs/denisty_QUDxMention_rawRT.pdf",width=6,height=3)
+
+
+# Violn plot
+ggplot(agr, aes(x=Conj, y=meanRT,fill=Conj, color=Conj)) + 
+  geom_violin(trim=FALSE,alpha=.4) +
+  geom_jitter(shape=16, position=position_jitter(0.2)) +
+  facet_grid(Mention~QUDType)
+
+# ggsave("../graphs/1a_violin.pdf",width=4,height=2)
+```
+
+
+```{r}
+agr <- d %>%
+  filter(Type =="critical") %>%
+  group_by(QUDType,Conj,Mention) %>%
+  summarize(meanRT = mean(chunk1), CILow = ci.low(chunk1), CIHigh = ci.high(chunk1)) %>%
+  mutate(YMin = meanRT - CILow, YMax = meanRT + CIHigh)
+
+dodge <- position_dodge(.9)
+ggplot(agr,aes(x=Conj, y=meanRT, fill=QUDType)) +
+  facet_wrap(~Mention) +
+  geom_bar(position=dodge,stat="identity") +
+  geom_errorbar(aes(ymin=YMin,ymax=YMax),width=.25,position=dodge) +
+  # scale_fill_manual(values=cbPalette) +
+  # scale_color_manual(values=cbPalette) +
+  ggtitle("mean RT for first chunk")
+```
+
+
+## QUD x Mention X AnswerQUDRelevant (raw RT)
+```{r}
+agr <- d %>%
+  filter(Type =="critical") %>%
+  # is.numeric(chunk1) %>%
+  group_by(Letters,Conj,QUDType,Mention,AnswerQUDRelevant) %>% #,Mention
+  summarize(meanRT = mean(chunk1)) 
+  # mutate(YMin = meanLogRT - CILow, YMax = meanLogRT + CIHigh)
+
+ggplot(agr, aes(x = meanRT, fill=Conj, alpha=QUDType, color=Conj)) +
+  geom_density(alpha = .4) +
+  facet_grid(AnswerQUDRelevant~Mention)
+
+# ggsave("graphs/denisty_QUDxMention_rawRT.pdf",width=6,height=3)
+
+
+# Violn plot
+ggplot(agr, aes(x=Conj, y=meanRT,fill=Conj,alpha=QUDType,color=Conj)) + 
+  geom_violin(trim=FALSE,alpha=.4) +
+  geom_jitter(shape=16, position=position_jitter(0.2)) +
+  facet_grid(AnswerQUDRelevant~Mention)
+
+# ggsave("../graphs/1a_violin.pdf",width=4,height=2)
+```
+
+```{r}
+agr <- d %>%
+  filter(Type =="critical") %>%
+  group_by(QUDType,Conj,AnswerQUDRelevant,Mention) %>%
+  summarize(meanRT = mean(chunk1), CILow = ci.low(chunk1), CIHigh = ci.high(chunk1)) %>%
+  mutate(YMin = meanRT - CILow, YMax = meanRT + CIHigh)
+
+dodge <- position_dodge(.9)
+ggplot(agr,aes(x=Conj, y=meanRT, fill=QUDType)) +
+  facet_grid(Mention~AnswerQUDRelevant) +
+  geom_bar(position=dodge,stat="identity") +
+  geom_errorbar(aes(ymin=YMin,ymax=YMax),width=.25,position=dodge) +
+  # scale_fill_manual(values=cbPalette) +
+  # scale_color_manual(values=cbPalette) +
+  ggtitle("mean RT for first chunk")
+```
+
+
+## QUD x Negation (raw RT)
+```{r}
+agr <- d %>%
+  filter(Type =="critical") %>%
+  # is.numeric(chunk1) %>%
+  group_by(Letters,Conj,QUDType,Negation) %>% #,Mention
+  summarize(meanRT = mean(chunk1)) 
+  # mutate(YMin = meanLogRT - CILow, YMax = meanLogRT + CIHigh)
+
+ggplot(agr, aes(x = meanRT, fill=Conj, color=Conj)) +
+  geom_density(alpha = .4) +
+  facet_grid(Negation~QUDType)
+
+# ggsave("graphs/denisty_QUDxMention_rawRT.pdf",width=6,height=3)
+
+
+# Violn plot
+ggplot(agr, aes(x=Conj, y=meanRT,fill=Conj, color=Conj)) + 
+  geom_violin(trim=FALSE,alpha=.4) +
+  geom_jitter(shape=16, position=position_jitter(0.2)) +
+  facet_grid(Negation~QUDType)
+
+# ggsave("../graphs/1a_violin.pdf",width=4,height=2)
+```
+
+
+```{r}
+agr <- d %>%
+  filter(Type =="critical") %>%
+  group_by(QUDType,Conj,Negation) %>%
+  summarize(meanRT = mean(chunk1), CILow = ci.low(chunk1), CIHigh = ci.high(chunk1)) %>%
+  mutate(YMin = meanRT - CILow, YMax = meanRT + CIHigh)
+
+dodge <- position_dodge(.9)
+ggplot(agr,aes(x=Conj, y=meanRT, fill=QUDType)) +
+  facet_wrap(~Negation) +
+  geom_bar(position=dodge,stat="identity") +
+  geom_errorbar(aes(ymin=YMin,ymax=YMax),width=.25,position=dodge) +
+  # scale_fill_manual(values=cbPalette) +
+  # scale_color_manual(values=cbPalette) +
+  ggtitle("mean RT for first chunk")
+```
+
+## QUD x Negqtion X AnswerQUDRelevant (raw RT)
+```{r}
+agr <- d %>%
+  filter(Type =="critical") %>%
+  # is.numeric(chunk1) %>%
+  group_by(Letters,Conj,QUDType,Negation,AnswerQUDRelevant) %>% #,Mention
+  summarize(meanRT = mean(chunk1)) 
+  # mutate(YMin = meanLogRT - CILow, YMax = meanLogRT + CIHigh)
+
+ggplot(agr, aes(x = meanRT, fill=Conj, alpha=QUDType, color=Conj)) +
+  geom_density(alpha = .4) +
+  facet_grid(AnswerQUDRelevant~Negation)
+
+# ggsave("graphs/denisty_QUDxMention_rawRT.pdf",width=6,height=3)
+
+
+# Violn plot
+ggplot(agr, aes(x=Conj, y=meanRT,fill=Conj,alpha=QUDType,color=Conj)) + 
+  geom_violin(trim=FALSE,alpha=.4) +
+  geom_jitter(shape=16, position=position_jitter(0.2)) +
+  facet_grid(AnswerQUDRelevant~Negation)
+
+# ggsave("../graphs/1a_violin.pdf",width=4,height=2)
+```
+
+
+```{r}
+agr <- d %>%
+  filter(Type =="critical") %>%
+  group_by(QUDType,Conj,AnswerQUDRelevant,Negation) %>%
+  summarize(meanRT = mean(chunk1), CILow = ci.low(chunk1), CIHigh = ci.high(chunk1)) %>%
+  mutate(YMin = meanRT - CILow, YMax = meanRT + CIHigh)
+
+dodge <- position_dodge(.9)
+ggplot(agr,aes(x=Conj, y=meanRT, fill=QUDType)) +
+  facet_grid(Negation~AnswerQUDRelevant) +
+  geom_bar(position=dodge,stat="identity") +
+  geom_errorbar(aes(ymin=YMin,ymax=YMax),width=.25,position=dodge) +
+  # scale_fill_manual(values=cbPalette) +
+  # scale_color_manual(values=cbPalette) +
+  ggtitle("mean RT for first chunk")
+```
+
+
+
+# Looking at particular items
+
+```{r, fig.width=6,fig.height=8}
+d$Number <- as.factor(d$Number)
+agr <- d %>%
+  filter(Type =="critical") %>%
+  group_by(Number,QUDType) %>%
+  summarize(meanRT = mean(chunk1), CILow = ci.low(chunk1), CIHigh = ci.high(chunk1)) %>%
+  mutate(YMin = meanRT - CILow, YMax = meanRT + CIHigh)
+# View(agr)
+
+dodge <- position_dodge(.9)
+ggplot(agr,aes(x=QUDType, y=meanRT, fill=QUDType)) +
+  facet_wrap(~Number,ncol=2) +
+  geom_bar(position=dodge,stat="identity") +
+  geom_errorbar(aes(ymin=YMin,ymax=YMax),width=.25,position=dodge)
+  # scale_fill_manual(values=cbPalette) +
+  # scale_color_manual(values=cbPalette) +
+  # ggtitle("mean RT for first chunk")
+```
+
+
+
+```{r}
+agr <- d %>%
+  filter(Type =="critical") %>%
+  filter(Number %in% c("7","8","1","2")) %>%
+  group_by(Number,QUDType) %>%
+  summarize(meanRT = mean(chunk1), CILow = ci.low(chunk1), CIHigh = ci.high(chunk1)) %>%
+  mutate(YMin = meanRT - CILow, YMax = meanRT + CIHigh)
+
+
+dodge <- position_dodge(.9)
+ggplot(agr,aes(x=Number, y=meanRT, fill=QUDType)) +
+  # facet_wrap(~Number) +
+  geom_bar(position=dodge,stat="identity") +
+  geom_errorbar(aes(ymin=YMin,ymax=YMax),width=.25,position=dodge) +
+  # scale_fill_manual(values=cbPalette) +
+  # scale_color_manual(values=cbPalette) +
+  ggtitle("mean RT for first chunk, 7/8, 1/2")
+```
+
+
+
+troublesome cases:
+1: EBT,LHN
+2: TYK,IYG
+7: JLP, XDS
+8: QDR, UOP
+
+irel rel
+1: EBT 	"There is no cue, and there is a T"
+1': LHN "There is no P and there is an H" <<< lower mean
+
+2: TYK: "There is no L, but there is a K"
+2': IYG "There is no X but there is an I"
+
+rel rel
+7: JLP "There is no U and there is a J"
+7': XDS "There is no O and there is an X"
+
+8: QDR "There is no V but there is a D"
+8': UOP "There is no F but there is a U"
+```{r, fig.width=10,fig.height=5}
+agr <- d %>%
+  filter(Type =="critical") %>%
+  filter(Number %in% c("7","8","1","2")) %>%
+  # is.numeric(chunk1) %>%
+  group_by(QUDType,Letters) %>%
+  summarize(meanRT_chunk1 = mean(chunk1), CILow = ci.low(chunk1), CIHigh = ci.high(chunk1)) %>%
+  mutate(YMin = meanRT_chunk1 - CILow, YMax = meanRT_chunk1 + CIHigh)
+
+
+# reoder the levels so that we can see side-by-side the comparisons
+agr$Letters <- factor(agr$Letters, levels=c("EBT","LHN","TYK","IYG","JLP","XDS","QDR","UOP"))
+
+dodge <- position_dodge(.9)
+ggplot(agr,aes(x=Letters, y=meanRT_chunk1,alpha=QUDType, fill=Letters)) +
+  # facet_wrap(~QUDType, ncol=3) +
+  # facet_wrap(~Wh, ncol=2) +
+  geom_bar(position=dodge,stat="identity") +
+  geom_errorbar(aes(ymin=YMin,ymax=YMax),width=.25,position=dodge) +
+  # scale_fill_manual(values=cbPalette) +
+  # scale_color_manual(values=cbPalette) +
+  ggtitle("mean RT for first chunk, individual trials in order 1, 2, 7, 8")
+```
+
+
+# The following items need to be all the same in NoQUD and General QUD
+
+```{r, fig.width=6,fig.height=8}
+# Look at the first chunk reading time
+agr <- d %>%
+  filter(Type =="critical") %>%
+  filter(Number %in% c("3","4","5","6","9","10","11","12")) %>%
+  # is.numeric(chunk1) %>%
+  group_by(QUDType,Number) %>%
+  summarize(meanRT_chunk1 = mean(chunk1), CILow = ci.low(chunk1), CIHigh = ci.high(chunk1)) %>%
+  mutate(YMin = meanRT_chunk1 - CILow, YMax = meanRT_chunk1 + CIHigh)
+
+# reoder the levels so that we can see side-by-side the comparisons
+# df_chunk1$Letters <- factor(df_chunk1$Letters, levels=c("EBT","LHN","TYK","IYG","JLP","XDS","QDR","UOP"))
+
+dodge <- position_dodge(.9)
+ggplot(agr,aes(x=QUDType, y=meanRT_chunk1, fill=QUDType)) +
+  facet_wrap(~Number, ncol=2) +
+  # facet_wrap(~Wh, ncol=2) +
+  geom_bar(position=dodge,stat="identity") +
+  geom_errorbar(aes(ymin=YMin,ymax=YMax),width=.25,position=dodge) +
+  # scale_fill_manual(values=cbPalette) +
+  # scale_color_manual(values=cbPalette) +
+  ggtitle("mean RT for first chunk, individual trials in order 3-6, 9-12")
+```
+
+
+
+```{r, fig.width=5,fig.height=10}
+# Look at the first chunk reading time
+agr <- d %>%
+  filter(Type =="critical") %>%
+  filter(Number %in% c("3","4","5","6","9","10","11","12")) %>%
+  # is.numeric(chunk1) %>%
+  group_by(QUDType,Letters) %>%
+  summarize(meanRT_chunk1 = mean(chunk1), CILow = ci.low(chunk1), CIHigh = ci.high(chunk1)) %>%
+  mutate(YMin = meanRT_chunk1 - CILow, YMax = meanRT_chunk1 + CIHigh)
+
+# reoder the levels so that we can see side-by-side the comparisons
+agr$Letters <- factor(agr$Letters, levels=c(
+   # 3/4
+   "ZFW","MCR",
+    # 3'/4'
+    "BQG","DNF",
+  
+    # 5/6
+    "VGW","PBN",
+    # 5'/6'
+    "OTY","JXO",
+    
+    # 9/10
+    "FQA","RUI",
+    # 9'/10'
+    "AKT","NJV",
+      
+      # 11/12
+    "XAV","CEH",
+       # 11'/12'
+    "ZDY","IFL"))
+
+dodge <- position_dodge(.9)
+ggplot(agr,aes(x=QUDType, y=meanRT_chunk1, fill=QUDType)) +
+  facet_wrap(~Letters, ncol=2) +
+  # facet_wrap(~Wh, ncol=2) +
+  geom_bar(position=dodge,stat="identity") +
+  geom_errorbar(aes(ymin=YMin,ymax=YMax),width=.25,position=dodge) +
+  # scale_fill_manual(values=cbPalette) +
+  # scale_color_manual(values=cbPalette) +
+  ggtitle("mean RT for first chunk, individual trials in order 3-6, 9-12")
+```
+
+
+```{r, fig.width=10,fig.height=5}
+dodge <- position_dodge(.9)
+ggplot(agr,aes(x=QUDType, y=meanRT_chunk1, fill=Letters)) +
+  # facet_wrap(~Letters, ncol=2) +
+  # facet_wrap(~Wh, ncol=2) +
+  geom_bar(position=dodge,stat="identity") +
+  geom_errorbar(aes(ymin=YMin,ymax=YMax),width=.25,position=dodge) +
+  # scale_fill_manual(values=cbPalette) +
+  # scale_color_manual(values=cbPalette) +
+  ggtitle("mean RT for first chunk, individual trials in order 3-6, 9-12")
+
+```
+
+
+
+
+# LogRTs
+```{r}
+agr <- d %>%
+  filter(Type =="critical") %>%
+  # is.numeric(chunk1) %>%
+  group_by(QUDType,Conj,AnswerQUDRelevant,Mention) %>%
+  summarize(meanLogRT = mean(log(chunk1)), CILow = ci.low(log(chunk1)), CIHigh = ci.high(log(chunk1))) %>%
+  mutate(YMin = meanLogRT - CILow, YMax = meanLogRT + CIHigh)
+
+
+# View(df_chunk1)
+
+dodge <- position_dodge(.9)
+ggplot(agr,aes(x=Conj, y=meanLogRT, fill=QUDType)) +
+  facet_grid(Mention~AnswerQUDRelevant) +
+  geom_bar(position=dodge,stat="identity") +
+  geom_errorbar(aes(ymin=YMin,ymax=YMax),width=.25,position=dodge) +
+  # scale_fill_manual(values=cbPalette) +
+  # scale_color_manual(values=cbPalette) +
+  ggtitle("mean logRT for first chunk")
+```
+
+
+```{r}
+agr <- d %>%
+  filter(Type =="critical") %>%
+  # is.numeric(chunk1) %>%
+  group_by(Letters,Conj,QUDType) %>% #AnswerQUDRelevant,Mention,QUDType
+  summarize(meanLogRT = mean(log(chunk1))) 
+  # mutate(YMin = meanLogRT - CILow, YMax = meanLogRT + CIHigh)
+
+ggplot(agr, aes(x = meanLogRT, fill=Conj, color=Conj)) +
+  geom_density(alpha = .4) +
+  facet_wrap(~QUDType)
+
+# ggsave("graphs/denisty_QUD_logRT.pdf",width=7,height=2)
+```

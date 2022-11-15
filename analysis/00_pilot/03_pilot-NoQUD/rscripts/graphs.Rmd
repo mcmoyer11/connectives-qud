@@ -1,0 +1,119 @@
+---
+title: "NoQUD graphs"
+author: Morgan Moyer
+date: 7 Nov, 2022
+output: html_document
+---
+
+```{r setup, include=FALSE, warning=FALSE, echo=FALSE}
+library(ggplot2)
+library(lme4)
+library(lmerTest)
+library(multcomp) # not available for this version of R
+library(philentropy)
+library(stringr)
+library(textstem)
+library(tidyverse)
+theme_set(theme_bw())
+cbPalette <- c("#56B4E9", "#D55E00", "#009E73","#999999", "#E69F00","#009E73","#56B4E9", "#D55E00", "#009E73","#999999", "#E69F00","#009E73","#56B4E9", "#D55E00", "#009E73","#999999", "#E69F00","#009E73","#56B4E9", "#D55E00", "#009E73","#999999", "#E69F00","#009E73")
+```
+
+```{r read in all the data, include=FALSE, warning=FALSE, echo=FALSE, message=FALSE}
+this.dir <- dirname(rstudioapi::getSourceEditorContext()$path)
+setwd(this.dir)
+source("../../../helpers.R")
+d <- read.csv("../data/processed.csv")
+```
+
+```{r}
+names(d)
+```
+
+
+```{r}
+d$Number <- as.factor(d$Number)
+agr <- d %>%
+  filter(Type =="critical") %>%
+  # is.numeric(chunk1) %>%
+  group_by(Number,Conj) %>%
+  summarize(meanRT_chunk1 = mean(chunk1), CILow = ci.low(meanRT_chunk1), CIHigh = ci.high(meanRT_chunk1)) %>%
+  mutate(YMin = meanRT_chunk1 - CILow, YMax = meanRT_chunk1 + CIHigh)
+
+
+agr$YMin <- agr$meanRT_chunk1 - ci.low(agr$meanRT_chunk1)
+agr$YMax <- agr$meanRT_chunk1 + ci.high(agr$meanRT_chunk1)
+
+
+dodge <- position_dodge(.9)
+ggplot(agr,aes(x=Number, y=meanRT_chunk1, fill=Conj)) +
+  # facet_wrap(~Number) +
+  geom_bar(position=dodge,stat="identity") +
+  geom_errorbar(aes(ymin=YMin,ymax=YMax),width=.25,position=dodge) +
+  # scale_fill_manual(values=cbPalette) +
+  # scale_color_manual(values=cbPalette) +
+  ggtitle("mean RT for first chunk, General QUD Condition")
+# ggsave("../graphs/meanRT_NumberxConj.pdf",width=6,height=4)
+```
+
+# Mean Rating Denisity
+```{r aggregate by-item, warning=FALSE, echo=FALSE, message=FALSE}
+agr = d %>%
+  group_by(Number,Conj,ID.Ibex.x) %>%
+  summarize(mean_RT = mean(chunk1),sd = sd(chunk1))
+```
+
+
+```{r}
+agr = d %>%
+  group_by(tgrep_id,paraphrase) %>%
+  summarize(mean_rating = mean(normed_rating),sd = sd(normed_rating)) %>% 
+  # summarize(CILow = ci.low(normed_rating), CIHigh = ci.high(normed_rating)) %>%
+  # mutate(YMin = mean_rating - CILow, YMax = mean_rating + CIHigh) %>%
+  drop_na()
+
+agr$YMin <- agr$mean_rating - ci.low(agr$mean_rating)
+agr$YMax <- agr$mean_rating + ci.high(agr$mean_rating)
+```
+
+```{r mean rating density, warning=FALSE, echo=FALSE, message=FALSE}
+# look at differences in mean_rating
+ggplot(agr, aes(x = mean_RT, fill=Conj, color=Conj)) +
+  geom_density(alpha = .4) +
+  facet_wrap(~Number,ncol=2)
+
+# ggsave("../graphs/denisty_ConjxNumber.pdf",width=4,height=6)
+```
+
+## Mean Rating
+```{r, warning=FALSE, echo=FALSE, message=FALSE}
+# look at differences in mean_rating
+ggplot(data = agr, aes(x = mean_rating, fill=paraphrase, color=paraphrase)) +
+  geom_density(alpha = .4) +
+  # facet_grid(~paraphrase) +
+  scale_fill_manual(values=cbPalette) +
+  scale_color_manual(values=cbPalette)
+# ggsave("../graphs/ex1a_denisty_mean_ratings.pdf",width=6,height=3)
+```
+
+```{r}
+ggplot(agr,aes(x=mean_rating,fill=paraphrase,color=paraphrase)) +
+  geom_histogram(alpha = .4) +
+  scale_fill_manual(values=cbPalette) +
+  scale_color_manual(values=cbPalette)
+  scale_x_continuous(name="Mean by-item paraphrase rating") 
+
+```
+
+
+
+```{r}
+ggplot(agr, aes(x=paraphrase, y=mean_rating,fill=paraphrase, color=paraphrase)) + 
+    geom_violin(trim=FALSE,alpha=.4) +
+    geom_jitter(shape=16, position=position_jitter(0.2)) +
+    geom_errorbar(aes(ymin=YMin,ymax=YMax),width=.25,position="dodge", show.legend = FALSE) +
+  ylim(0,1) +
+  scale_fill_manual(values=cbPalette) +
+  scale_color_manual(values=cbPalette)
+# ggsave("../graphs/1a_violin.pdf",width=4,height=2)
+```
+

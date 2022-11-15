@@ -1,0 +1,126 @@
+---
+title: "Exploratory analysis"
+author: Morgan Moyer
+date: 7 Nov, 2022
+output: html_document
+---
+
+```{r setup, include=FALSE, warning=FALSE, echo=FALSE}
+library(ggplot2)
+library(lme4)
+library(lmerTest)
+library(multcomp) # not available for this version of R
+library(philentropy)
+library(stringr)
+library(textstem)
+library(tidyverse)
+theme_set(theme_bw())
+cbPalette <- c("#56B4E9", "#D55E00", "#009E73","#999999", "#E69F00","#009E73","#56B4E9", "#D55E00", "#009E73","#999999", "#E69F00","#009E73","#56B4E9", "#D55E00", "#009E73","#999999", "#E69F00","#009E73","#56B4E9", "#D55E00", "#009E73","#999999", "#E69F00","#009E73")
+```
+
+```{r read in all the data, include=FALSE, warning=FALSE, echo=FALSE, message=FALSE}
+this.dir <- dirname(rstudioapi::getSourceEditorContext()$path)
+setwd(this.dir)
+s <- read.csv("../01_pilot-SpecificQUD/data/processed.csv")
+s$QUDType <- "Specific"
+
+g <- read.csv("../02_pilot-GeneralQUD/data/processed.csv")
+g$QUDType <- "General"
+
+n <- read.csv("../03_pilot-NoQUD/data/processed.csv")
+n$QUDType <- "None"
+
+d <- rbind(s,g,n)
+```
+
+# add the mention/not mention factor
+```{r}
+d$Mention <- ""
+d$Mention[(d$Number == "1") |
+            (d$Number == "2") |
+            (d$Number == "7") |
+            (d$Number == "8")] <- "Mentioned"
+
+d$Mention[(d$Number == "3") |
+            (d$Number == "4") |
+            (d$Number == "5") |
+            (d$Number == "6") |
+            (d$Number == "9") |
+            (d$Number == "10") |
+            (d$Number == "11") |
+            (d$Number == "12")] <- "NotMentioned"
+
+d$AnswerQUDRelevant <- ""
+d$AnswerRelevance[(d$Number == "1") |
+            (d$Number == "2") |
+            (d$Number == "11") |
+            (d$Number == "12")] <- "NotQUDRelevant"
+
+d$AnswerQUDRelevant[(d$Number == "3") |
+            (d$Number == "4") |
+            (d$Number == "5") |
+            (d$Number == "6") |
+            (d$Number == "9") |
+            (d$Number == "10")] <- "QUDRelevant"
+```
+
+
+```{r}
+# Make everything into a factor
+d$Conj = as.factor(d$Conj)
+d$Negation = as.factor(d$Negation)
+d$ID = as.factor(d$ID.Ibex.x)
+d$Number = as.factor(d$Number)
+d$Letters = as.factor(d$Letters.x)
+d$QUDType = as.factor(d$QUDType)
+d$Mention = as.factor(d$Mention)
+d$AnswerQUDRelevant = as.factor(d$AnswerQUDRelevant)
+
+contrasts(d$Negation)
+contrasts(d$QUDType)
+contrasts(d$Mention)
+
+# contrasts(d$QUDType) = cbind("how.vs.when"=c(0,1,0,0,0,0),"what.vs.when"=c(1,0,0,0,0,0),
+                # "where.vs.when"=c(0,0,0,1,0,0))
+```
+
+```{r mean-center Conj}
+center = d %>%
+  filter((Type =="critical") & (QUDType == "None")) %>%
+  mutate(cConj = as.numeric(Conj)-mean(as.numeric(Conj))) %>%
+  mutate(cNegation = as.numeric(Negation)-mean(as.numeric(Negation))) %>%
+  mutate(cMention = as.numeric(Mention)-mean(as.numeric(Mention))) %>%
+  mutate(cAnswerQUDRelevant = as.numeric(AnswerQUDRelevant)-mean(as.numeric(AnswerQUDRelevant))) %>%
+  droplevels()
+
+nrow(center)
+```
+
+# no QUD + conjunction alone not sig,
+```{r}
+
+m = lmer(chunk1 ~ cConj + (1+cConj|ID) + (1|Number), data=center)
+summary(m)
+```
+
+```{r}
+plot(m)
+```
+
+
+# no QUD + conjunction*AnswerQUDRelevant
+```{r}
+m.mention = lmer(chunk1 ~ cConj*cAnswerQUDRelevant*cMention*cNegation + (1+cConj+cAnswerQUDRelevant+cMention+cNegation|ID) + (1|Number), data=center)
+summary(m.mention)
+```
+
+
+```{r}
+
+m.QUD = lmer(chunk1 ~ cConj*QUD + (1+cConj|ID) + (1+QUD|Number), data=center)
+# saveRDS(m.ms.ma.full, "../models/model-task-para.rds")
+
+# m <- readRDS("../models/m.rds")
+summary(m.QUD)
+
+```

@@ -1,0 +1,66 @@
+---
+title: "NoQUD regression"
+author: Morgan Moyer
+date: 7 Nov, 2022
+output: html_document
+---
+
+```{r setup, include=FALSE, warning=FALSE, echo=FALSE}
+library(ggplot2)
+library(lme4)
+library(lmerTest)
+library(multcomp) # not available for this version of R
+library(philentropy)
+library(stringr)
+library(textstem)
+library(tidyverse)
+theme_set(theme_bw())
+cbPalette <- c("#56B4E9", "#D55E00", "#009E73","#999999", "#E69F00","#009E73","#56B4E9", "#D55E00", "#009E73","#999999", "#E69F00","#009E73","#56B4E9", "#D55E00", "#009E73","#999999", "#E69F00","#009E73","#56B4E9", "#D55E00", "#009E73","#999999", "#E69F00","#009E73")
+```
+
+```{r read in all the data, include=FALSE, warning=FALSE, echo=FALSE, message=FALSE}
+this.dir <- dirname(rstudioapi::getSourceEditorContext()$path)
+setwd(this.dir)
+d <- read.csv("../data/processed.csv")
+```
+
+
+
+
+```{r}
+# Make everything into a factor
+d$Conj = as.factor(d$Conj)
+d$Negation = as.factor(d$Negation)
+d$ID = as.factor(d$ID.Ibex.x)
+d$Number = as.factor(d$Number)
+d$Letters = as.factor(d$Letters.x)
+
+contrasts(d$Negation)
+levels(d$Conj)
+```
+
+```{r mean-center Conj}
+center = d %>%
+  filter(Type =="critical") %>%
+  mutate(cConj = as.numeric(Conj)-mean(as.numeric(Conj))) %>%
+  mutate(cNegation = as.numeric(Negation)-mean(as.numeric(Negation))) %>%
+  droplevels()
+
+nrow(center)
+```
+
+
+```{r}
+
+m = lmer(chunk1 ~ cConj + (1+cConj|ID) + (1|Number), data=center)
+# saveRDS(m.ms.ma.full, "../models/model-task-para.rds")
+
+# m <- readRDS("../models/m.rds")
+summary(m)
+
+```
+
+```{r}
+plot(m)
+```
+
