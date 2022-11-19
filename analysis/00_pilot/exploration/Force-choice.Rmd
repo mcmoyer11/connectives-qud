@@ -185,7 +185,7 @@ ggplot(agr, aes(Conj,y=Proportion_Yes,fill=QUDType)) +
 ```
 
 # Items
-```{r, fig.width=10,fig.height=5}
+```{r, fig.width=5,fig.height=10}
 agr <- d %>% 
   group_by(QUDType,Number) %>%
   summarise(Proportion_Yes = mean(response), CILow = ci.low(response), CIHigh = ci.high(response)) %>%

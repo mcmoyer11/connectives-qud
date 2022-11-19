@@ -39,18 +39,18 @@ d$chunk2 <- as.numeric(d$chunk2)
 names(d)
 nrow(d) #1440
 
-length(unique(d$ID.Ibex.x)) # 60
+length(unique(d$ID)) # 60
 ```
 
 # add the mention/not mention factor
 ```{r}
-d$Mention <- ""
-d$Mention[(d$Number == "1") |
+d$FCMention <- ""
+d$FCMention[(d$Number == "1") |
             (d$Number == "2") |
             (d$Number == "7") |
             (d$Number == "8")] <- "Mentioned"
 
-d$Mention[(d$Number == "3") |
+d$FCMention[(d$Number == "3") |
             (d$Number == "4") |
             (d$Number == "5") |
             (d$Number == "6") |
@@ -61,13 +61,13 @@ d$Mention[(d$Number == "3") |
 
 
 
-d$AnswerQUDRelevant <- ""
-d$AnswerQUDRelevant[(d$Number == "1") |
+d$FCAnswerQUDRelevant <- ""
+d$FCAnswerQUDRelevant[(d$Number == "1") |
             (d$Number == "2") |
             (d$Number == "11") |
             (d$Number == "12")] <- "NotQUDRelevant"
 
-d$AnswerQUDRelevant[(d$Number == "3") |
+d$FCAnswerQUDRelevant[(d$Number == "3") |
             (d$Number == "4") |
             (d$Number == "5") |
             (d$Number == "6") |
@@ -76,6 +76,82 @@ d$AnswerQUDRelevant[(d$Number == "3") |
             (d$Number == "9") |
             (d$Number == "10")] <- "QUDRelevant"
 
+```
+
+
+# add second conjunct factors
+```{r}
+d$SCMention <- ""
+d$SCMention[(d$Number == "1") |
+            (d$Number == "2") |
+            (d$Number == "7") |
+            (d$Number == "8") |
+            (d$Number == "9") |
+            (d$Number == "10") |
+            (d$Number == "11") |
+            (d$Number == "12")] <- "Mentioned"
+
+d$SCMention[(d$Number == "3") |
+            (d$Number == "4") |
+            (d$Number == "5") |
+            (d$Number == "6") ] <- "NotMentioned"
+
+
+
+d$SCAnswerQUDRelevant <- ""
+d$SCAnswerQUDRelevant[(d$Number == "3") |
+            (d$Number == "4")  |
+            (d$Number == "9") |
+            (d$Number == "10")] <- "NotQUDRelevant"
+
+d$SCAnswerQUDRelevant[(d$Number == "1") |
+            (d$Number == "2") |
+            
+            (d$Number == "5") |
+            (d$Number == "6") |
+            (d$Number == "7") |
+            (d$Number == "8")|
+            (d$Number == "11") |
+            (d$Number == "12")] <- "QUDRelevant"
+
+```
+
+# Add Combo factors
+```{r}
+d$TotalRelevant <- ""
+d$TotalRelevant[(d$Number == "1") |
+            (d$Number == "2")  |
+            (d$Number == "11") |
+            (d$Number == "12")] <- "Irel_Rel"
+
+d$TotalRelevant[(d$Number == "5") |
+            (d$Number == "6")  |
+            (d$Number == "7") |
+            (d$Number == "8")] <- "Rel_Rel"
+
+
+d$TotalRelevant[(d$Number == "3") |
+            (d$Number == "4")  |
+            (d$Number == "9") |
+            (d$Number == "10")] <- "Rel_Irel"
+
+
+d$TotalMention <- ""
+d$TotalMention[(d$Number == "9") |
+            (d$Number == "10")  |
+            (d$Number == "11") |
+            (d$Number == "12")] <- "Men_Men"
+
+d$TotalMention[(d$Number == "1") |
+            (d$Number == "2")  |
+            (d$Number == "7") |
+            (d$Number == "8")] <- "NotMen_Men"
+
+
+d$TotalMention[(d$Number == "3") |
+            (d$Number == "4")  |
+            (d$Number == "5") |
+            (d$Number == "6")] <- "Men_NotMen"
 ```
 
 
@@ -121,36 +197,36 @@ ggplot(agr,aes(x=Conj, y=meanRT, fill=QUDType)) +
 
 
 
-## QUD x AnswerQUDRelevant (raw RT)
+## QUD x First Conjunct AnswerQUDRelevant (raw RT)
 ```{r}
 agr <- d %>%
   filter(Type =="critical") %>%
   # is.numeric(chunk2) %>%
-  group_by(Letters,Conj,QUDType,AnswerQUDRelevant) %>% #,Mention
+  group_by(Letters,Conj,QUDType,FCAnswerQUDRelevant) %>% #,Mention
   summarize(meanRT = mean(chunk2)) 
   # mutate(YMin = meanLogRT - CILow, YMax = meanLogRT + CIHigh)
 
 ggplot(agr, aes(x = meanRT, fill=Conj, color=Conj)) +
   geom_density(alpha = .4) +
-  facet_grid(AnswerQUDRelevant~QUDType)
+  facet_grid(FCAnswerQUDRelevant~QUDType)
 # ggsave("graphs/denisty_QUDxRelevance_rawRT.pdf",width=6,height=3)
 
 ggplot(agr, aes(x=Conj, y=meanRT,fill=Conj, color=Conj)) + 
   geom_violin(trim=FALSE,alpha=.4) +
   geom_jitter(shape=16, position=position_jitter(0.2)) +
-  facet_grid(AnswerQUDRelevant~QUDType)
+  facet_grid(FCAnswerQUDRelevant~QUDType)
 ```
 
 ```{r}
 agr <- d %>%
   filter(Type =="critical") %>%
-  group_by(QUDType,Conj,AnswerQUDRelevant) %>%
+  group_by(QUDType,Conj,FCAnswerQUDRelevant) %>%
   summarize(meanRT = mean(chunk2), CILow = ci.low(chunk2), CIHigh = ci.high(chunk2)) %>%
   mutate(YMin = meanRT - CILow, YMax = meanRT + CIHigh)
 
 dodge <- position_dodge(.9)
 ggplot(agr,aes(x=Conj, y=meanRT, fill=QUDType)) +
-  facet_wrap(~AnswerQUDRelevant) +
+  facet_wrap(~FCAnswerQUDRelevant) +
   geom_bar(position=dodge,stat="identity") +
   geom_errorbar(aes(ymin=YMin,ymax=YMax),width=.25,position=dodge) +
   # scale_fill_manual(values=cbPalette) +
@@ -158,27 +234,66 @@ ggplot(agr,aes(x=Conj, y=meanRT, fill=QUDType)) +
   ggtitle("mean RT for second chunk")
 ```
 
-## QUD x Mention (raw RT)
+
+## QUD x Second Conjunct AnswerQUDRelevant (raw RT)
 ```{r}
 agr <- d %>%
   filter(Type =="critical") %>%
   # is.numeric(chunk2) %>%
-  group_by(Letters,Conj,QUDType,Mention) %>% #,Mention
+  group_by(Letters,Conj,QUDType,SCAnswerQUDRelevant) %>% #,Mention
   summarize(meanRT = mean(chunk2)) 
   # mutate(YMin = meanLogRT - CILow, YMax = meanLogRT + CIHigh)
 
 ggplot(agr, aes(x = meanRT, fill=Conj, color=Conj)) +
   geom_density(alpha = .4) +
-  facet_grid(Mention~QUDType)
+  facet_grid(SCAnswerQUDRelevant~QUDType)
+# ggsave("graphs/denisty_QUDxRelevance_rawRT.pdf",width=6,height=3)
+
+ggplot(agr, aes(x=Conj, y=meanRT,fill=Conj, color=Conj)) + 
+  geom_violin(trim=FALSE,alpha=.4) +
+  geom_jitter(shape=16, position=position_jitter(0.2)) +
+  facet_grid(SCAnswerQUDRelevant~QUDType)
+```
+
+```{r}
+agr <- d %>%
+  filter(Type =="critical") %>%
+  group_by(QUDType,Conj,SCAnswerQUDRelevant) %>%
+  summarize(meanRT = mean(chunk2), CILow = ci.low(chunk2), CIHigh = ci.high(chunk2)) %>%
+  mutate(YMin = meanRT - CILow, YMax = meanRT + CIHigh)
+
+dodge <- position_dodge(.9)
+ggplot(agr,aes(x=Conj, y=meanRT, fill=QUDType)) +
+  facet_wrap(~SCAnswerQUDRelevant) +
+  geom_bar(position=dodge,stat="identity") +
+  geom_errorbar(aes(ymin=YMin,ymax=YMax),width=.25,position=dodge) +
+  # scale_fill_manual(values=cbPalette) +
+  # scale_color_manual(values=cbPalette) +
+  ggtitle("mean RT for second chunk")
+```
+
+
+
+## QUD x First Conjunct Mention (raw RT)
+```{r}
+agr <- d %>%
+  filter(Type =="critical") %>%
+  # is.numeric(chunk2) %>%
+  group_by(Letters,Conj,QUDType,FCMention) %>% #,Mention
+  summarize(meanRT = mean(chunk2)) 
+  # mutate(YMin = meanLogRT - CILow, YMax = meanLogRT + CIHigh)
+
+ggplot(agr, aes(x = meanRT, fill=Conj, color=Conj)) +
+  geom_density(alpha = .4) +
+  facet_grid(FCMention~QUDType)
 
 # ggsave("graphs/denisty_QUDxMention_rawRT.pdf",width=6,height=3)
-
 
 # Violn plot
 ggplot(agr, aes(x=Conj, y=meanRT,fill=Conj, color=Conj)) + 
   geom_violin(trim=FALSE,alpha=.4) +
   geom_jitter(shape=16, position=position_jitter(0.2)) +
-  facet_grid(Mention~QUDType)
+  facet_grid(FCMention~QUDType)
 
 # ggsave("../graphs/1a_violin.pdf",width=4,height=2)
 ```
@@ -187,13 +302,13 @@ ggplot(agr, aes(x=Conj, y=meanRT,fill=Conj, color=Conj)) +
 ```{r}
 agr <- d %>%
   filter(Type =="critical") %>%
-  group_by(QUDType,Conj,Mention) %>%
+  group_by(QUDType,Conj,FCMention) %>%
   summarize(meanRT = mean(chunk2), CILow = ci.low(chunk2), CIHigh = ci.high(chunk2)) %>%
   mutate(YMin = meanRT - CILow, YMax = meanRT + CIHigh)
 
 dodge <- position_dodge(.9)
 ggplot(agr,aes(x=Conj, y=meanRT, fill=QUDType)) +
-  facet_wrap(~Mention) +
+  facet_wrap(~FCMention) +
   geom_bar(position=dodge,stat="identity") +
   geom_errorbar(aes(ymin=YMin,ymax=YMax),width=.25,position=dodge) +
   # scale_fill_manual(values=cbPalette) +
@@ -202,46 +317,62 @@ ggplot(agr,aes(x=Conj, y=meanRT, fill=QUDType)) +
 ```
 
 
-## QUD x Mention X AnswerQUDRelevant (raw RT)
-```{r}
-agr <- d %>%
-  filter(Type =="critical") %>%
-  # is.numeric(chunk2) %>%
-  group_by(Letters,Conj,QUDType,Mention,AnswerQUDRelevant) %>% #,Mention
-  summarize(meanRT = mean(chunk2)) 
-  # mutate(YMin = meanLogRT - CILow, YMax = meanLogRT + CIHigh)
-
-ggplot(agr, aes(x = meanRT, fill=Conj, alpha=QUDType, color=Conj)) +
-  geom_density(alpha = .4) +
-  facet_grid(AnswerQUDRelevant~Mention)
-
-# ggsave("graphs/denisty_QUDxMention_rawRT.pdf",width=6,height=3)
-
-
-# Violn plot
-ggplot(agr, aes(x=Conj, y=meanRT,fill=Conj,alpha=QUDType,color=Conj)) + 
-  geom_violin(trim=FALSE,alpha=.4) +
-  geom_jitter(shape=16, position=position_jitter(0.2)) +
-  facet_grid(AnswerQUDRelevant~Mention)
-
-# ggsave("../graphs/1a_violin.pdf",width=4,height=2)
-```
+## QUD x FCMention X FCAnswerQUDRelevant (raw RT)
 
 ```{r}
 agr <- d %>%
   filter(Type =="critical") %>%
-  group_by(QUDType,Conj,AnswerQUDRelevant,Mention) %>%
+  group_by(QUDType,Conj,FCAnswerQUDRelevant,FCMention) %>%
   summarize(meanRT = mean(chunk2), CILow = ci.low(chunk2), CIHigh = ci.high(chunk2)) %>%
   mutate(YMin = meanRT - CILow, YMax = meanRT + CIHigh)
 
 dodge <- position_dodge(.9)
 ggplot(agr,aes(x=Conj, y=meanRT, fill=QUDType)) +
-  facet_grid(Mention~AnswerQUDRelevant) +
+  facet_grid(FCMention~FCAnswerQUDRelevant) +
   geom_bar(position=dodge,stat="identity") +
   geom_errorbar(aes(ymin=YMin,ymax=YMax),width=.25,position=dodge) +
   # scale_fill_manual(values=cbPalette) +
   # scale_color_manual(values=cbPalette) +
-  ggtitle("mean RT for second chunk")
+  ggtitle("mean RT for second chunk, FC FACTORS")
+```
+
+## QUD x SCMention X SCAnswerQUDRelevant (raw RT)
+
+```{r}
+agr <- d %>%
+  filter(Type =="critical") %>%
+  group_by(QUDType,Conj,SCAnswerQUDRelevant,SCMention) %>%
+  summarize(meanRT = mean(chunk2), CILow = ci.low(chunk2), CIHigh = ci.high(chunk2)) %>%
+  mutate(YMin = meanRT - CILow, YMax = meanRT + CIHigh)
+
+dodge <- position_dodge(.9)
+ggplot(agr,aes(x=Conj, y=meanRT, fill=QUDType)) +
+  facet_grid(SCMention~SCAnswerQUDRelevant) +
+  geom_bar(position=dodge,stat="identity") +
+  geom_errorbar(aes(ymin=YMin,ymax=YMax),width=.25,position=dodge) +
+  # scale_fill_manual(values=cbPalette) +
+  # scale_color_manual(values=cbPalette) +
+  ggtitle("mean RT for second chunk, SC FACTORS")
+```
+
+
+## QUD x TotalMention X TotalRelevant (raw RT)
+
+```{r}
+agr <- d %>%
+  filter(Type =="critical") %>%
+  group_by(QUDType,Conj,TotalRelevant,TotalMention) %>%
+  summarize(meanRT = mean(chunk2), CILow = ci.low(chunk2), CIHigh = ci.high(chunk2)) %>%
+  mutate(YMin = meanRT - CILow, YMax = meanRT + CIHigh)
+
+dodge <- position_dodge(.9)
+ggplot(agr,aes(x=Conj, y=meanRT, fill=QUDType)) +
+  facet_grid(TotalMention~TotalRelevant) +
+  geom_bar(position=dodge,stat="identity") +
+  geom_errorbar(aes(ymin=YMin,ymax=YMax),width=.25,position=dodge) +
+  # scale_fill_manual(values=cbPalette) +
+  # scale_color_manual(values=cbPalette) +
+  ggtitle("mean RT for second chunk, Total Conjunct Factors")
 ```
 
 
@@ -257,9 +388,6 @@ agr <- d %>%
 ggplot(agr, aes(x = meanRT, fill=Conj, color=Conj)) +
   geom_density(alpha = .4) +
   facet_grid(Negation~QUDType)
-
-# ggsave("graphs/denisty_QUDxMention_rawRT.pdf",width=6,height=3)
-
 
 # Violn plot
 ggplot(agr, aes(x=Conj, y=meanRT,fill=Conj, color=Conj)) + 
@@ -288,47 +416,24 @@ ggplot(agr,aes(x=Conj, y=meanRT, fill=QUDType)) +
   ggtitle("mean RT for second chunk")
 ```
 
-## QUD x Negqtion X AnswerQUDRelevant (raw RT)
-```{r}
-agr <- d %>%
-  filter(Type =="critical") %>%
-  # is.numeric(chunk2) %>%
-  group_by(Letters,Conj,QUDType,Negation,AnswerQUDRelevant) %>% #,Mention
-  summarize(meanRT = mean(chunk2)) 
-  # mutate(YMin = meanLogRT - CILow, YMax = meanLogRT + CIHigh)
-
-ggplot(agr, aes(x = meanRT, fill=Conj, alpha=QUDType, color=Conj)) +
-  geom_density(alpha = .4) +
-  facet_grid(AnswerQUDRelevant~Negation)
-
-# ggsave("graphs/denisty_QUDxMention_rawRT.pdf",width=6,height=3)
-
-
-# Violn plot
-ggplot(agr, aes(x=Conj, y=meanRT,fill=Conj,alpha=QUDType,color=Conj)) + 
-  geom_violin(trim=FALSE,alpha=.4) +
-  geom_jitter(shape=16, position=position_jitter(0.2)) +
-  facet_grid(AnswerQUDRelevant~Negation)
-
-# ggsave("../graphs/1a_violin.pdf",width=4,height=2)
-```
+## QUD x FCNegation X FC AnswerQUDRelevant (raw RT)
 
 
 ```{r}
 agr <- d %>%
   filter(Type =="critical") %>%
-  group_by(QUDType,Conj,AnswerQUDRelevant,Negation) %>%
+  group_by(QUDType,Conj,FCAnswerQUDRelevant,Negation) %>%
   summarize(meanRT = mean(chunk2), CILow = ci.low(chunk2), CIHigh = ci.high(chunk2)) %>%
   mutate(YMin = meanRT - CILow, YMax = meanRT + CIHigh)
 
 dodge <- position_dodge(.9)
 ggplot(agr,aes(x=Conj, y=meanRT, fill=QUDType)) +
-  facet_grid(Negation~AnswerQUDRelevant) +
+  facet_grid(Negation~FCAnswerQUDRelevant) +
   geom_bar(position=dodge,stat="identity") +
   geom_errorbar(aes(ymin=YMin,ymax=YMax),width=.25,position=dodge) +
   # scale_fill_manual(values=cbPalette) +
   # scale_color_manual(values=cbPalette) +
-  ggtitle("mean RT for second chunk")
+  ggtitle("mean RT for second chunk, FC")
 ```
 
 
@@ -354,7 +459,7 @@ ggplot(agr,aes(x=QUDType, y=meanRT, fill=QUDType)) +
   # ggtitle("mean RT for second chunk")
 ```
 
-
+# Comparing 1/2 and 7/8
 
 ```{r}
 agr <- d %>%
@@ -372,10 +477,29 @@ ggplot(agr,aes(x=Number, y=meanRT, fill=QUDType)) +
   geom_errorbar(aes(ymin=YMin,ymax=YMax),width=.25,position=dodge) +
   # scale_fill_manual(values=cbPalette) +
   # scale_color_manual(values=cbPalette) +
-  ggtitle("mean RT for second chunk, 7/8, 1/2")
+  ggtitle("mean RT for second chunk, 1/2, 7/8")
 ```
 
+# Comparing 5/6 and 9/10
 
+```{r}
+agr <- d %>%
+  filter(Type =="critical") %>%
+  filter(Number %in% c("5","6","9","10")) %>%
+  group_by(Number,QUDType) %>%
+  summarize(meanRT = mean(chunk2), CILow = ci.low(chunk2), CIHigh = ci.high(chunk2)) %>%
+  mutate(YMin = meanRT - CILow, YMax = meanRT + CIHigh)
+
+
+dodge <- position_dodge(.9)
+ggplot(agr,aes(x=Number, y=meanRT, fill=QUDType)) +
+  # facet_wrap(~Number) +
+  geom_bar(position=dodge,stat="identity") +
+  geom_errorbar(aes(ymin=YMin,ymax=YMax),width=.25,position=dodge) +
+  # scale_fill_manual(values=cbPalette) +
+  # scale_color_manual(values=cbPalette) +
+  ggtitle("mean RT for second chunk, 5/6, 9/10")
+```
 
 troublesome cases:
 1: EBT,LHN
@@ -396,56 +520,8 @@ rel rel
 
 8: QDR "There is no V but there is a D"
 8': UOP "There is no F but there is a U"
-```{r, fig.width=10,fig.height=5}
-agr <- d %>%
-  filter(Type =="critical") %>%
-  filter(Number %in% c("7","8","1","2")) %>%
-  # is.numeric(chunk2) %>%
-  group_by(QUDType,Letters) %>%
-  summarize(meanRT_chunk2 = mean(chunk2), CILow = ci.low(chunk2), CIHigh = ci.high(chunk2)) %>%
-  mutate(YMin = meanRT_chunk2 - CILow, YMax = meanRT_chunk2 + CIHigh)
 
 
-# reoder the levels so that we can see side-by-side the comparisons
-agr$Letters <- factor(agr$Letters, levels=c("EBT","LHN","TYK","IYG","JLP","XDS","QDR","UOP"))
-
-dodge <- position_dodge(.9)
-ggplot(agr,aes(x=Letters, y=meanRT_chunk2,alpha=QUDType, fill=Letters)) +
-  # facet_wrap(~QUDType, ncol=3) +
-  # facet_wrap(~Wh, ncol=2) +
-  geom_bar(position=dodge,stat="identity") +
-  geom_errorbar(aes(ymin=YMin,ymax=YMax),width=.25,position=dodge) +
-  # scale_fill_manual(values=cbPalette) +
-  # scale_color_manual(values=cbPalette) +
-  ggtitle("mean RT for second chunk, individual trials in order 1, 2, 7, 8")
-```
-
-
-# The following items need to be all the same in NoQUD and General QUD
-
-```{r, fig.width=6,fig.height=8}
-# Look at the second chunk reading time
-agr <- d %>%
-  filter(Type =="critical") %>%
-  filter(Number %in% c("3","4","5","6","9","10","11","12")) %>%
-  # is.numeric(chunk2) %>%
-  group_by(QUDType,Number) %>%
-  summarize(meanRT_chunk2 = mean(chunk2), CILow = ci.low(chunk2), CIHigh = ci.high(chunk2)) %>%
-  mutate(YMin = meanRT_chunk2 - CILow, YMax = meanRT_chunk2 + CIHigh)
-
-# reoder the levels so that we can see side-by-side the comparisons
-# df_chunk2$Letters <- factor(df_chunk2$Letters, levels=c("EBT","LHN","TYK","IYG","JLP","XDS","QDR","UOP"))
-
-dodge <- position_dodge(.9)
-ggplot(agr,aes(x=QUDType, y=meanRT_chunk2, fill=QUDType)) +
-  facet_wrap(~Number, ncol=2) +
-  # facet_wrap(~Wh, ncol=2) +
-  geom_bar(position=dodge,stat="identity") +
-  geom_errorbar(aes(ymin=YMin,ymax=YMax),width=.25,position=dodge) +
-  # scale_fill_manual(values=cbPalette) +
-  # scale_color_manual(values=cbPalette) +
-  ggtitle("mean RT for second chunk, individual trials in order 3-6, 9-12")
-```
 
 
 
@@ -490,59 +566,4 @@ ggplot(agr,aes(x=QUDType, y=meanRT_chunk2, fill=QUDType)) +
   # scale_fill_manual(values=cbPalette) +
   # scale_color_manual(values=cbPalette) +
   ggtitle("mean RT for second chunk, individual trials in order 3-6, 9-12")
-```
-
-
-```{r, fig.width=10,fig.height=5}
-dodge <- position_dodge(.9)
-ggplot(agr,aes(x=QUDType, y=meanRT_chunk2, fill=Letters)) +
-  # facet_wrap(~Letters, ncol=2) +
-  # facet_wrap(~Wh, ncol=2) +
-  geom_bar(position=dodge,stat="identity") +
-  geom_errorbar(aes(ymin=YMin,ymax=YMax),width=.25,position=dodge) +
-  # scale_fill_manual(values=cbPalette) +
-  # scale_color_manual(values=cbPalette) +
-  ggtitle("mean RT for second chunk, individual trials in order 3-6, 9-12")
-
-```
-
-
-
-
-# LogRTs
-```{r}
-agr <- d %>%
-  filter(Type =="critical") %>%
-  # is.numeric(chunk2) %>%
-  group_by(QUDType,Conj,AnswerQUDRelevant,Mention) %>%
-  summarize(meanLogRT = mean(log(chunk2)), CILow = ci.low(log(chunk2)), CIHigh = ci.high(log(chunk2))) %>%
-  mutate(YMin = meanLogRT - CILow, YMax = meanLogRT + CIHigh)
-
-
-# View(df_chunk2)
-
-dodge <- position_dodge(.9)
-ggplot(agr,aes(x=Conj, y=meanLogRT, fill=QUDType)) +
-  facet_grid(Mention~AnswerQUDRelevant) +
-  geom_bar(position=dodge,stat="identity") +
-  geom_errorbar(aes(ymin=YMin,ymax=YMax),width=.25,position=dodge) +
-  # scale_fill_manual(values=cbPalette) +
-  # scale_color_manual(values=cbPalette) +
-  ggtitle("mean logRT for second chunk")
-```
-
-
-```{r}
-agr <- d %>%
-  filter(Type =="critical") %>%
-  # is.numeric(chunk2) %>%
-  group_by(Letters,Conj,QUDType) %>% #AnswerQUDRelevant,Mention,QUDType
-  summarize(meanLogRT = mean(log(chunk2))) 
-  # mutate(YMin = meanLogRT - CILow, YMax = meanLogRT + CIHigh)
-
-ggplot(agr, aes(x = meanLogRT, fill=Conj, color=Conj)) +
-  geom_density(alpha = .4) +
-  facet_wrap(~QUDType)
-
-# ggsave("graphs/denisty_QUD_logRT.pdf",width=7,height=2)
 ```

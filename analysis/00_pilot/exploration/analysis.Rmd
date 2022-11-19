@@ -69,9 +69,9 @@ d$AnswerQUDRelevant[(d$Number == "3") |
 # Make everything into a factor
 d$Conj = as.factor(d$Conj)
 d$Negation = as.factor(d$Negation)
-d$ID = as.factor(d$ID.Ibex.x)
+d$ID = as.factor(d$ID)
 d$Number = as.factor(d$Number)
-d$Letters = as.factor(d$Letters.x)
+d$Letters = as.factor(d$Letters)
 d$QUDType = as.factor(d$QUDType)
 d$Mention = as.factor(d$Mention)
 d$AnswerQUDRelevant = as.factor(d$AnswerQUDRelevant)
@@ -86,7 +86,7 @@ contrasts(d$Mention)
 
 ```{r mean-center Conj}
 center = d %>%
-  filter((Type =="critical") & (QUDType == "None")) %>%
+  # filter((Type =="critical") & (QUDType == "None")) %>%
   mutate(cConj = as.numeric(Conj)-mean(as.numeric(Conj))) %>%
   mutate(cNegation = as.numeric(Negation)-mean(as.numeric(Negation))) %>%
   mutate(cMention = as.numeric(Mention)-mean(as.numeric(Mention))) %>%
@@ -99,7 +99,7 @@ nrow(center)
 # no QUD + conjunction alone not sig,
 ```{r}
 
-m = lmer(chunk1 ~ cConj + (1+cConj|ID) + (1|Number), data=center)
+m = lmer(chunk1 ~ cConj*QUDType + (1+cConj|ID) + (1+QUDType|Number), data=center)
 summary(m)
 ```
 

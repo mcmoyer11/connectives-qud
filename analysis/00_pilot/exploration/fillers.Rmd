@@ -1,0 +1,265 @@
+---
+title: "Connectives + QUD Study: RT 2"
+author: Morgan Moyer
+date: July 12, 2022
+output: html_document
+---
+
+```{r setup, include=FALSE, warning=FALSE, echo=FALSE}
+library(ggplot2)
+library(lme4)
+library(lmerTest)
+library(multcomp) # not available for this version of R
+library(stringr)
+library(textstem)
+library(tidyverse)
+theme_set(theme_bw())
+cbPalette <- c("#56B4E9", "#D55E00", "#009E73","#999999", "#E69F00","#009E73","#56B4E9", "#D55E00", "#009E73","#999999", "#E69F00","#009E73","#56B4E9", "#D55E00", "#009E73","#999999", "#E69F00","#009E73","#56B4E9", "#D55E00", "#009E73","#999999", "#E69F00","#009E73")
+```
+
+
+```{r}
+read.pcibex <- function(filepath, auto.colnames=TRUE, fun.col=function(col,cols){cols[cols==col]<-paste(col,"Ibex",sep=".");return(cols)}) {
+  n.cols <- max(count.fields(filepath,sep=",",quote=NULL),na.rm=TRUE)
+  if (auto.colnames){
+    cols <- c()
+    con <- file(filepath, "r")
+    while ( TRUE ) {
+      line <- readLines(con, n = 1, warn=FALSE)
+      if ( length(line) == 0) {
+        break
+      }
+      m <- regmatches(line,regexec("^# (\\d+)\\. (.+)\\.$",line))[[1]]
+      if (length(m) == 3) {
+        index <- as.numeric(m[2])
+        value <- m[3]
+        if (index < length(cols)){
+          cols <- c()
+        }
+        if (is.function(fun.col)){
+          cols <- fun.col(value,cols)
+        }
+        cols[index] <- value
+        if (index == n.cols){
+          break
+        }
+      }
+    }
+    close(con)
+    return(read.csv(filepath, comment.char="#", header=FALSE, col.names=cols))
+  }
+  else{
+    return(read.csv(filepath, comment.char="#", header=FALSE, col.names=seq(1:n.cols)))
+  }
+}
+
+```
+
+
+```{r}
+# REad in the results
+this.dir <- dirname(rstudioapi::getSourceEditorContext()$path)
+setwd(this.dir)
+source("../../helpers.R")
+
+s <- read.pcibex("../01_pilot-SpecificQUD/data/results_pilot3")
+g <- read.pcibex("../02_pilot-GeneralQUD/data/results_pilot1")
+n <- read.pcibex("../03_pilot-NoQUD/data/results")
+```
+
+
+```{r}
+s$QUDType <- "Specific"
+s.fill <- s %>% 
+  filter((Type == "fillers") | (TrialType == "filler")) 
+s.fill$response = ifelse(s.fill$Value[s.fill$Parameter=="PressedKey"] == "F",0,1)
+summary(s.fill$response)
+table(s.fill$response)
+
+g$QUDType <- "General"
+g.fill <- g %>% 
+  filter((Type == "fillers") | (TrialType == "filler")) 
+g.fill$response = ifelse(g.fill$Value[g.fill$Parameter=="PressedKey"] == "F",1,0)
+summary(g.fill$response)
+table(g.fill$response)
+
+n$QUDType <- "None"
+n.fill <- n %>% 
+  filter((Type == "fillers") | (TrialType == "filler"))
+n.fill$response = ifelse(n.fill$Value[n.fill$Parameter=="PressedKey"] == "F",0,1)
+summary(n.fill$response)
+
+table(n.fill$response)
+
+
+d <- rbind(s.fill,g.fill,n.fill)
+nrow(d)
+length(unique(d$Number))
+
+summary(d$response)
+
+```
+
+
+```{r,eval=FALSE}
+s$QUDType <- "Specific"
+
+s.fill.t <- s %>% 
+  filter((Type == "fillers") | (TrialType == "filler")) %>% 
+  filter(Number >= 13 & Number <=18)
+
+# For numbers 13-18 (Number <= 18) Pressed_key should be true / F
+s.fill.t$Accuracy = ifelse(s.fill.t$Value[s.fill.t$Parameter=="PressedKey"] == "F",1,0)
+
+s.fill.f <- s %>% 
+  filter((Type == "fillers") | (TrialType == "filler")) %>% 
+  filter(Number >= 19)
+  # For numbers 19-21 (Number >= 19) correct Pressed_key should be false / J
+s.fill.f$Accuracy = ifelse(s.fill.f$Value[s.fill.f$Parameter=="PressedKey"] == "J",1,0)
+# combine together
+s.fill <- rbind(s.fill.f,s.fill.t)
+
+# General QUD Condition: For these we have to switch the value of F and J
+g$QUDType <- "General"
+# For numbers 13-18 (Number <= 18) Pressed_key should be true / F
+g.fill.t <- g %>% 
+  filter((Type == "fillers") | (TrialType == "filler")) %>% 
+  filter(Number >= 13 & Number <=18)
+g.fill.t$Accuracy = ifelse(g.fill.t$Value[g.fill.t$Parameter=="PressedKey"] == "F",0,1)
+
+# For numbers 19-21 (Number >= 19) correct Pressed_key should be false / J
+g.fill.f <- g %>% 
+  filter((Type == "fillers") | (TrialType == "filler")) %>% 
+  filter(Number >= 19)
+g.fill.f$Accuracy = ifelse(g.fill.f$Value[g.fill.f$Parameter=="PressedKey"] == "J",0,1)
+# combine together
+g.fill <- rbind(g.fill.f,g.fill.t)
+
+
+# NoQUD Condition
+n$QUDType <- "None"
+
+# For numbers 13-18 (Number <= 18) Pressed_key should be true / F
+n.fill.t <- n %>% 
+  filter((Type == "fillers") | (TrialType == "filler")) %>% 
+  filter(Number >= 13 & Number <=18)
+n.fill.t$Accuracy = ifelse(n.fill.t$Value[n.fill.t$Parameter=="PressedKey"] == "F",1,0)
+# For numbers 19-21 (Number >= 19) correct Pressed_key should be false / J
+n.fill.f <- n %>% 
+  filter((Type == "fillers") | (TrialType == "filler")) %>% 
+  filter(Number >= 19)
+n.fill.f$Accuracy = ifelse(n.fill.f$Value[n.fill.f$Parameter=="PressedKey"] == "J",1,0)
+# combine together
+n.fill <- rbind(n.fill.t,n.fill.f)
+
+
+d <- rbind(s.fill,g.fill,n.fill)
+nrow(d)
+length(unique(d$Letters))
+length(unique(d$QUD))
+
+n$TrialType
+
+```
+
+Proportion Yes
+```{r}
+agr <- d %>%
+  group_by(Number,QUDType) %>%
+  summarise(Proportion_Yes = mean(response), CILow = ci.low(response), CIHigh = ci.high(response)) %>%
+  mutate(YMin = Proportion_Yes - CILow, YMax = Proportion_Yes)
+
+dodge = position_dodge(.9)
+ggplot(agr, aes(QUDType,y=Proportion_Yes,fill=QUDType)) +
+  facet_wrap(~Number,ncol=4) +
+  geom_bar(position=dodge,stat="identity") +
+  geom_errorbar(aes(ymin=YMin,ymax=YMax),width=.25,position=dodge) +
+  ggtitle(label = "Proportion Yes") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  ylim(0,1)
+
+```
+
+
+
+
+
+# Fillers
+
+## TRUE RESPONSE FILLERS
+```{r}
+facc_pos <- d.fillers %>% filter(Number >= 13 & Number <=18)
+# For numbers 13-18 (Number <= 18) Pressed_key should be true / F
+facc_pos$Accuracy = ifelse(facc_pos$Value[facc_pos$Parameter=="PressedKey"] == "F",1,0)
+```
+
+```{r, graph fillers}
+agg <- facc_pos %>%
+  select(ID, Number, Accuracy) %>%
+  group_by(ID) %>%
+  mutate(mean_accuracy = mean(Accuracy))
+
+dodge = position_dodge(.9)
+ggplot(data=agg, aes(x=reorder(ID,mean_accuracy),y=mean_accuracy,fill=ID)) +
+  geom_bar(position=dodge,stat="identity")
+
+```
+
+## FALSE RESPONSE FILLERS
+```{r}
+
+```
+
+```{r, graph false response fillers}
+agg <- facc_neg %>%
+  select(ID, Number, Accuracy) %>%
+  group_by(ID) %>%
+  mutate(mean_accuracy = mean(Accuracy))
+
+dodge = position_dodge(.9)
+ggplot(data=agg, aes(x=reorder(ID,mean_accuracy),y=mean_accuracy,fill=ID)) +
+  geom_bar(position=dodge,stat="identity")
+
+```
+
+### Look overall by-subject mean accuracy on fillers
+```{r}
+facc = rbind(facc_neg,facc_pos)
+nrow(facc_pos)
+# View(facc)
+agg <- facc %>%
+  select(ID, Number, Accuracy) %>%
+  group_by(ID) %>%
+  summarize(mean_accuracy = mean(Accuracy))
+# View(agg)
+
+dodge = position_dodge(.9)
+ggplot(data=agg, aes(x=reorder(ID,mean_accuracy),y=mean_accuracy,fill=ID)) +
+  geom_bar(position=dodge,stat="identity")
+```
+
+
+
+
+# Denisty
+
+## QUD (raw RT)
+```{r}
+agr <- d %>%
+  filter(Type =="critical") %>%
+  # is.numeric(chunk2) %>%
+  group_by(Letters,Conj,QUDType) %>% #AnswerQUDRelevant,Mention,QUDType
+  summarize(meanRT = mean(chunk2)) 
+  # mutate(YMin = meanLogRT - CILow, YMax = meanLogRT + CIHigh)
+
+ggplot(agr, aes(x = meanRT, fill=Conj, color=Conj)) +
+  geom_density(alpha = .4) +
+  facet_wrap(~QUDType)
+# ggsave("graphs/denisty_QUD_rawRT.pdf",width=7,height=2)
+
+ggplot(agr, aes(x=Conj, y=meanRT,fill=Conj, color=Conj)) + 
+  geom_violin(trim=FALSE,alpha=.4) +
+  geom_jitter(shape=16, position=position_jitter(0.2)) +
+  facet_wrap(~QUDType)
+```
+
