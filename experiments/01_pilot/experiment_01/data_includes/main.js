@@ -269,7 +269,7 @@ newTrial("TrainEnd",
 )
 
 // critical test trials
-Template( "critical_specificQUD.csv", row =>
+Template( "critical_specific.csv", row =>
         newTrial("critical",
             newText("Word", `<p>${row.Answerer} pulls out <b> ${row.Letters}</b>.</p>`)
                 .center()
@@ -324,18 +324,19 @@ Template( "critical_specificQUD.csv", row =>
         )
         .log( "ID" , getVar("ID") )
         .log( "TrialType" , row.TrialType )
+        .log( "SentType" , row.SentType )
         .log( "Number" , row.Number)
         .log( "Letters" , row.Letters )
         .log( "QUD" , row.QUD )
+        .loq( "QUDType" , row.QUDType)
         .log( "AnswerConj1" , row.AnswerConj1 )
         .log( "AnswerConj2" , row.AnswerConj2 )
         .log( "QUDTruth", row.QUDTruth)
-        .log( "AnswerRelevance", row.AnswerRelevance)
         .log( "Conj" , row.Conj )
 )
 
 // fillers
-Template( "fillers.csv", row =>
+Template( "fillers_specific.csv", row =>
         newTrial("fillers",
             newText("Word", `<p>${row.Answerer} pulls out <b> ${row.Letters}</b>.</p>`)
                 .center()
@@ -386,13 +387,14 @@ Template( "fillers.csv", row =>
         )
         .log( "ID" , getVar("ID") )
         .log( "TrialType" , row.TrialType )
+        .log( "SentType" , row.SentType )
         .log( "Number" , row.Number)
         .log( "Letters" , row.Letters )
         .log( "QUD" , row.QUD )
+        .log( "QUDType" , row.QUDType )
         .log( "AnswerConj1" , row.AnswerConj1 )
         .log( "AnswerConj2" , row.AnswerConj2 )
         .log( "QUDTruth", row.QUDTruth)
-        .log( "AnswerRelevance", row.AnswerRelevance)
         .log( "Conj" , row.Conj )
 )
 
