@@ -1,0 +1,419 @@
+---
+title: "Pre-processing Data from Pilot 2: Connectives + QUD Study - Specific"
+author: Morgan Moyer
+date: January 10, 2023
+output: html_document
+---
+
+```{r setup, include=FALSE, warning=FALSE, echo=FALSE}
+library(ggplot2)
+library(lme4)
+library(lmerTest)
+library(multcomp) # not available for this version of R
+library(stringr)
+library(textstem)
+library(tidyverse)
+theme_set(theme_bw())
+cbPalette <- c("#56B4E9", "#D55E00", "#009E73","#999999", "#E69F00","#009E73","#56B4E9", "#D55E00", "#009E73","#999999", "#E69F00","#009E73","#56B4E9", "#D55E00", "#009E73","#999999", "#E69F00","#009E73","#56B4E9", "#D55E00", "#009E73","#999999", "#E69F00","#009E73")
+this.dir <- dirname(rstudioapi::getSourceEditorContext()$path)
+setwd(this.dir)
+source("../../helpers.R")
+```
+
+```{r}
+# User-defined function to read in PCIbex Farm results files
+read.pcibex <- function(filepath, auto.colnames=TRUE, fun.col=function(col,cols){cols[cols==col]<-paste(col,"Ibex",sep=".");return(cols)}) {
+  n.cols <- max(count.fields(filepath,sep=",",quote=NULL),na.rm=TRUE)
+  if (auto.colnames){
+    cols <- c()
+    con <- file(filepath, "r")
+    while ( TRUE ) {
+      line <- readLines(con, n = 1, warn=FALSE)
+      if ( length(line) == 0) {
+        break
+      }
+      m <- regmatches(line,regexec("^# (\\d+)\\. (.+)\\.$",line))[[1]]
+      if (length(m) == 3) {
+        index <- as.numeric(m[2])
+        value <- m[3]
+        if (is.function(fun.col)){
+         cols <- fun.col(value,cols)
+        }
+        cols[index] <- value
+        if (index == n.cols){
+          break
+        }
+      }
+    }
+    close(con)
+    return(read.csv(filepath, comment.char="#", header=FALSE, col.names=cols))
+  }
+  else{
+    return(read.csv(filepath, comment.char="#", header=FALSE, col.names=seq(1:n.cols)))
+  }
+}
+
+```
+
+
+```{r}
+# REad in the results
+
+d <- read.pcibex("../data/results.csv")
+
+d$ID = as.factor(d$ID)
+```
+
+
+```{r}
+# View(d)
+nrow(d) #4555
+nrow(d) / 20 # 395.8
+
+length(unique(d$ID)) # 39
+
+names(d)
+```
+
+# Take a look at comments and Problems
+```{r}
+unique(d$PennElementType)
+comments <- d %>% filter((PennElementType == "TextInput") & (PennElementName == "Comments"))
+unique(comments$Value)
+
+comments <- d %>% filter((PennElementType == "TextInput") & (PennElementName == "Problems"))
+unique(comments$Value)
+
+comments <- d %>% filter((PennElementType == "TextInput") & (PennElementName == "NativeLang"))
+unique(comments$Value)
+
+comments <- d %>% filter((PennElementType == "TextInput") & (PennElementName == "OtherLangs"))
+
+unique(comments$Value)
+
+comments <- d %>% filter((PennElementType == "TextInput") & (PennElementName == "Gender"))
+unique(comments$Value)
+```
+
+
+
+# Fillers
+
+## TRUE RESPONSE FILLERS
+```{r}
+facc_pos <- d %>% filter(Number == 3 |
+                           Number == 4 |
+                           Number == 7 |
+                           Number == 8 |
+                           Number == 11 |
+                           Number == 12)
+# For these numbers, Pressed_key should be true / F
+facc_pos$Accuracy = ifelse(facc_pos$Value[facc_pos$Parameter=="PressedKey"] == "F",1,0)
+```
+
+```{r, graph fillers}
+agg <- facc_pos %>%
+  select(ID, Number, Accuracy) %>%
+  group_by(ID) %>%
+  mutate(mean_accuracy = mean(Accuracy))
+
+dodge = position_dodge(.9)
+ggplot(data=agg, aes(x=reorder(ID,mean_accuracy),y=mean_accuracy,fill=ID)) +
+  geom_bar(position=dodge,stat="identity")
+
+```
+
+## FALSE RESPONSE FILLERS
+```{r}
+facc_neg <- d %>% filter(Number == 1 |
+                           Number == 2 |
+                           Number == 5 |
+                           Number == 6 |
+                           Number == 9 |
+                           Number == 10)
+# For numbers 19-21 (Number >= 19) correct Pressed_key should be false / J
+facc_neg$Accuracy = ifelse(facc_neg$Value[facc_neg$Parameter=="PressedKey"] == "J",1,0)
+```
+
+
+```{r, graph false response fillers}
+agg <- facc_neg %>%
+  select(Number, Accuracy) %>%
+  group_by(Number) %>%
+  mutate(mean_accuracy = mean(Accuracy))
+
+dodge = position_dodge(.9)
+ggplot(data=agg, aes(x=reorder(Number,mean_accuracy),y=mean_accuracy,fill=Number)) +
+  geom_bar(position=dodge,stat="identity")
+
+```
+
+### Look overall by-subject mean accuracy on fillers
+```{r}
+facc = rbind(facc_neg,facc_pos)
+nrow(facc_pos)
+# View(facc)
+agg <- facc %>%
+  select(ID, Number, Accuracy) %>%
+  group_by(ID) %>%
+  summarize(mean_accuracy = mean(Accuracy))
+# View(agg)
+
+dodge = position_dodge(.9)
+ggplot(data=agg, aes(x=reorder(ID,mean_accuracy),y=mean_accuracy,fill=ID)) +
+  geom_bar(position=dodge,stat="identity")
+```
+
+
+```{r, eval=FALSE}
+# Remove subjects whose accuracy falls below 75%\
+
+summary(facc$Accuracy)
+inac <- facc %>% 
+  subset(Accuracy > .75)
+
+nrow(facc) - nrow(inac)
+length(unique(facc$ID))
+```
+
+
+# Look at overall trial time
+```{r}
+d_trialTime = d %>%
+    filter(Type %in% c("critical","filler") & Parameter == "_Trial_" ) %>%
+    select(-c("Time.results.were.received","Controller.name","PennElementType","PennElementName")) %>%
+    group_by(ID.Ibex,Letters) %>%
+    summarise( trialRT = EventTime[Value=="End"] - EventTime[Value=="Start"]) 
+
+# View(d_trialTime)
+```
+
+```{r}
+ggplot(d_trialTime, aes(x=trialRT)) +
+  geom_density(alpha = .4)
+  # geom_histogram(stat="count")
+
+```
+
+```{r}
+# Concat ID and Word columns together to the 
+d_trialTime$unique <- paste(d_trialTime$ID.Ibex,d_trialTime$Letters,sep="_")
+
+d_wordTime <- d %>%
+  # Filter to the important lines of the file
+  filter(Type %in% c("critical","filler") & (PennElementName == "DashedSentence" | PennElementName == "select")) %>%
+  select(ID.Ibex,Letters,Type,TrialType,Number,AnswerRelevance,QUD,AnswerConj1,AnswerConj2,Conj,PennElementName,Reading.time,Value) 
+# create a new column that differentiates between the two "dashedSentences" so 
+# as "chunk1" and "chunk2" so we can spread wide
+rename <- c("select","chunk1","chunk2")
+dWT <- cbind(rename,d_wordTime) 
+# creat a column with the unique combination of ID and item so that we can join
+# them together in a couple steps
+dWT$unique <- paste(d_wordTime$ID.Ibex,d_wordTime$Letters,sep="_")
+
+# spread "rename" column with reading time values
+dWT_wide <- dWT %>%
+    group_by(ID.Ibex,Letters,Type,TrialType,Number,AnswerRelevance,QUD,AnswerConj1,AnswerConj2,Conj) %>%
+    pivot_wider(names_from=rename,values_from=Reading.time)
+
+# joing the dfs together
+df <- left_join(dWT_wide,d_trialTime, by="unique")
+View(df)
+```
+
+
+# Remove subjects with RT higher than 3x IQR
+```{r, trialRT outliers}
+
+summary(df$trialRT)
+   # Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+   # 2211    6096    7608    8972    9992  163935 
+range(df$trialRT)
+
+hist(df$trialRT, breaks=100, col="red", xlab="RT (ms)",
+        main="Histogram with Normal Curve")
+
+quantile(df$trialRT)[4] + IQR(df$trialRT)*3 # 21681.75
+
+# remove subjects with RT higher than 3 x IQR
+df.outliers.removed <- subset(df, df$trialRT < 21681.75)
+
+hist(df.outliers.removed$trialRT, col="red", xlab="RT (ms)",
+        main="Histogram with Normal Curve")
+
+
+```
+
+
+# Add negation as a factor column
+negation items: 1, 2, 7, 8
+no negation: 3, 4, 5, 6, 9, 10, 11, 12 
+```{r}
+
+df.outliers.removed$Negation <- ifelse(df.outliers.removed$Number %in% c("1","2","7","8"),"yes","no")
+```
+
+
+# Add Decision RT
+(overall trial RT) - chunk 2 RT
+
+```{r, decision rt}
+df.outliers.removed$DecisionRT <- as.numeric(df.outliers.removed$trialRT) - as.numeric(df.outliers.removed$chunk2)
+
+# View(df.outliers.removed)
+```
+
+```{r}
+names(df.outliers.removed)
+
+fax <- df.outliers.removed[,c("PennElementName","unique","Value","chunk1","chunk2","DecisionRT")]
+
+cons <- df.outliers.removed %>% 
+  select(-names(fax),unique)
+
+names(cons)[names(cons) == 'ID.Ibex.x'] <- 'ID'
+names(cons)[names(cons) == 'Letters.x'] <- 'Letters'
+cons <- cons[,!names(cons) %in% c("Letters.y","ID.Ibex.y")]
+
+# create vector with correct names
+new_names <- c("select", "DashedSentence1","DashedSentence2")
+# merge with df
+fax_rename <- cbind(fax,new_names) %>% 
+  # drop old PennElementName and rename new column
+  select(-c("PennElementName"))
+# rename 
+names(fax_rename)[names(fax_rename) == 'new_names'] <- 'PennElementName'
+  
+# widen
+fax_wide <- fax_rename %>% 
+  group_by(PennElementName,Value) %>% 
+  pivot_wider(names_from=PennElementName,values_from=Value)
+names(fax_wide)
+
+a <- na.omit(fax_wide[,c("unique","chunk1")])
+b <- na.omit(fax_wide[,c("unique","chunk2")])
+c <- na.omit(fax_wide[,c("unique","DecisionRT")])
+d <- na.omit(fax_wide[,c("unique","select")])
+e <- na.omit(fax_wide[,c("unique","DashedSentence1")])
+f <- na.omit(fax_wide[,c("unique","DashedSentence2")])
+
+
+good <- Reduce(function(x,y) merge(x = x, y = y, by = "unique"), 
+       list(a,b,c,d,e,f))
+
+total <- merge(good,cons,by="unique")
+total_good <- total %>%  select(-c("select.y"))
+names(total_good)[names(total_good) == 'select.x'] <- 'response'
+
+
+length(unique(total_good$ID)) #17
+```
+
+
+# Save to CSV for easy graphing
+```{r}
+write.csv(total_good,"../data/processed.csv")
+```
+
+
+
+
+# Chunk2
+
+## remove outliers
+```{r}
+
+df$chunk2 <- as.factor(df$chunk2)
+df.c2.sub <- df %>%
+  filter(!is.na(chunk2))
+
+df.c2.sub$chunk2 <- as.numeric(df.c2.sub$chunk2)
+str(df.c2.sub$chunk2)
+summary(df.c2.sub$chunk2)
+mean(df.c2.sub$chunk2)
+sd(df.c2.sub$chunk2)
+range(df.c2.sub$chunk2)
+
+h<-hist(df.c2.sub$chunk2, breaks=20, col="red", xlab="RT (ms)",
+        main="Histogram with Normal Curve")
+
+quantile(df.c2.sub$chunk2)[4] + IQR(df.c2.sub$chunk2)*3 # 991.75
+
+# remove subjects with RT higher than 3 x IQR
+df.c2.outliers.removed <- subset(df.c2.sub, df.c2.sub$chunk2 < 991.75)
+
+hist(df.c2.outliers.removed$chunk2, col="red", xlab="RT (ms)",
+        main="Histogram with Normal Curve")
+
+```
+
+```{r}
+
+# Look at the first chunk reading time
+df_chunk2 <- df.c2.outliers.removed %>%
+  filter(Type =="critical") %>%
+  # is.numeric(chunk1) %>%
+  group_by(Number,Conj,AnswerRelevance) %>%
+  summarize(mean_C2RT = mean(chunk2))
+
+ggplot(df_chunk2,aes(x=mean_C2RT, fill=Conj)) +
+  facet_wrap(~AnswerRelevance) +
+  geom_density(alpha = .4)
+```
+
+## Add negation as a factor column
+negation items: 1, 2, 7, 8
+no negation: 3, 4, 5, 6, 9, 10, 11, 12 
+```{r}
+
+df.c2.outliers.removed$Negation <- ifelse(df.c2.outliers.removed$Number %in% c("2","2","7","8"),"yes","no")
+```
+
+```{r}
+df_chunk2 <- df.c2.outliers.removed %>%
+  filter(Type =="critical") %>%
+  # is.numeric(chunk2) %>%
+  group_by(Conj,AnswerRelevance,Negation) %>%
+  summarize(meanRT_chunk2 = mean(chunk2), CILow = ci.low(meanRT_chunk2), CIHigh = ci.high(meanRT_chunk2)) %>%
+  mutate(YMin = meanRT_chunk2 - CILow, YMax = meanRT_chunk2 + CIHigh)
+
+
+df_chunk2$YMin <- df_chunk2$meanRT_chunk2 - ci.low(df_chunk2$meanRT_chunk2)
+df_chunk2$YMax <- df_chunk2$meanRT_chunk2 + ci.high(df_chunk2$meanRT_chunk2)
+
+
+dodge <- position_dodge(.9)
+ggplot(df_chunk2,aes(x=Conj, y=meanRT_chunk2, fill=Negation)) +
+  facet_wrap(~AnswerRelevance) +
+  geom_bar(position=dodge,stat="identity") +
+  geom_errorbar(aes(ymin=YMin,ymax=YMax),width=.25,position=dodge) +
+  # scale_fill_manual(values=cbPalette) +
+  # scale_color_manual(values=cbPalette) +
+  ggtitle("mean RT for second chunk, Specific QUD Condition")
+```
+
+## Looking at particular items
+
+```{r}
+df.c2.outliers.removed$Number <- as.factor(df.c2.outliers.removed$Number)
+df_chunk2 <- df.c2.outliers.removed %>%
+  filter(Type =="critical") %>%
+  # is.numeric(chunk2) %>%
+  group_by(Number,Conj) %>%
+  summarize(meanRT_chunk2 = mean(chunk2), CILow = ci.low(meanRT_chunk2), CIHigh = ci.high(meanRT_chunk2)) %>%
+  mutate(YMin = meanRT_chunk2 - CILow, YMax = meanRT_chunk2 + CIHigh)
+
+
+df_chunk2$YMin <- df_chunk2$meanRT_chunk2 - ci.low(df_chunk2$meanRT_chunk2)
+df_chunk2$YMax <- df_chunk2$meanRT_chunk2 + ci.high(df_chunk2$meanRT_chunk2)
+
+
+dodge <- position_dodge(.9)
+ggplot(df_chunk2,aes(x=Number, y=meanRT_chunk2, fill=Conj)) +
+  # facet_wrap(~Number) +
+  geom_bar(position=dodge,stat="identity") +
+  geom_errorbar(aes(ymin=YMin,ymax=YMax),width=.25,position=dodge) +
+  # scale_fill_manual(values=cbPalette) +
+  # scale_color_manual(values=cbPalette) +
+  ggtitle("mean RT for first chunk, Specific QUD Condition")
+```
