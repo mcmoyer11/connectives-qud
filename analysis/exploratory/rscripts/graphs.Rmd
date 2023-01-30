@@ -1,0 +1,190 @@
+---
+title: "Pre-processing Data from Connectives + QUD Study"
+author: Morgan Moyer
+date: May 12, 2022
+output: html_document
+---
+
+```{r setup, include=FALSE, warning=FALSE, echo=FALSE}
+library(ggplot2)
+library(lme4)
+library(lmerTest)
+library(multcomp) # not available for this version of R
+library(stringr)
+library(textstem)
+library(tidyverse)
+theme_set(theme_bw())
+cbPalette <- c("#56B4E9", "#D55E00", "#009E73","#999999", "#E69F00")
+
+this.dir <- dirname(rstudioapi::getSourceEditorContext()$path)
+setwd(this.dir)
+source("../../helpers.R")
+```
+
+
+```{r}
+s <- read.csv("../../01_experiment_specific/data/processed.csv")
+s2 <- read.csv("../../000_pilot/data/processed.csv")
+g <- read.csv("../../02_experiment_general/data/processed.csv")
+n <- read.csv("../../03_experiment_noqud/data/processed.csv")
+
+d <- rbind(s,g,n,s2)
+```
+
+
+# Looing at chunk1
+
+## Overall
+```{r}
+d$chunk1 <- as.numeric(d$chunk1)
+
+agr <- d %>%
+  filter(TrialType =="test") %>%
+  group_by(Conj,QUDType) %>%
+  summarize(meanRT = mean(chunk1), CILow = ci.low(chunk1), CIHigh = ci.high(chunk1)) %>% 
+  mutate(YMin = meanRT - CILow, YMax = meanRT + CIHigh)
+
+dodge = position_dodge(.9)
+ggplot(agr,aes(x=QUDType, y=meanRT, fill=Conj)) +
+    geom_bar(position=dodge,stat="identity") +
+    geom_errorbar(aes(ymin=YMin,ymax=YMax),width=.25,position=dodge)
+```
+
+
+## By-SentType
+```{r}
+agr <- d %>%
+  filter(TrialType =="test") %>%
+  group_by(SentType,Conj,QUDType) %>%
+  summarize(meanRT = mean(chunk1), CILow = ci.low(chunk1), CIHigh = ci.high(chunk1)) %>% 
+  mutate(YMin = meanRT - CILow, YMax = meanRT + CIHigh)
+
+ggplot(agr,aes(x=QUDType, y=meanRT, fill=Conj)) +
+    facet_wrap(~SentType) +
+    geom_bar(position=dodge,stat="identity") +
+    geom_errorbar(aes(ymin=YMin,ymax=YMax),width=.25,position=dodge)
+```
+
+## By-SentType LogRT
+```{r}
+agr <- d %>%
+  filter(TrialType =="test") %>%
+  group_by(SentType,Conj,QUDType) %>%
+  summarize(meanLogRT = mean(log(chunk1)), CILow = ci.low(log(chunk1)), CIHigh = ci.high(log(chunk1))) %>% 
+  mutate(YMin = meanLogRT - CILow, YMax = meanLogRT + CIHigh)
+
+ggplot(agr,aes(x=QUDType, y=meanLogRT, fill=Conj)) +
+    facet_wrap(~SentType) +
+    coord_cartesian(ylim=c(6,7)) +
+    geom_bar(position=dodge,stat="identity") +
+    geom_errorbar(aes(ymin=YMin,ymax=YMax),width=.25,position=dodge)
+```
+
+
+## By-item
+```{r}
+d$Number <- as.factor(d$Number)
+agr <- d %>%
+  filter(TrialType =="test") %>%
+  group_by(Number,Conj,QUDType) %>%
+  summarize(meanRT = mean(chunk1), CILow = ci.low(chunk1), CIHigh = ci.high(chunk1)) %>% 
+  mutate(YMin = meanRT - CILow, YMax = meanRT + CIHigh)
+
+ggplot(agr,aes(x=Number, y=meanRT, fill=QUDType)) +
+    facet_wrap(~Conj) +
+    geom_bar(position=dodge,stat="identity") +
+    geom_errorbar(aes(ymin=YMin,ymax=YMax),width=.25,position=dodge)
+```
+
+# Looking at chunk2
+
+## Overall
+```{r}
+d$chunk2 <- as.numeric(d$chunk2)
+
+agr <- d %>%
+  filter(TrialType =="test") %>%
+  group_by(Conj,QUDType) %>%
+  summarize(meanRT = mean(chunk2), CILow = ci.low(chunk2), CIHigh = ci.high(chunk2)) %>% 
+  mutate(YMin = meanRT - CILow, YMax = meanRT + CIHigh)
+
+ggplot(agr,aes(x=QUDType, y=meanRT, fill=Conj)) +
+    # facet_wrap(~Number,ncol=2) +
+    geom_bar(position=dodge,stat="identity") +
+    geom_errorbar(aes(ymin=YMin,ymax=YMax),width=.25,position=dodge)
+```
+
+## By-SentType
+```{r}
+agr <- d %>%
+  filter(TrialType =="test") %>%
+  group_by(SentType,Conj,QUDType) %>%
+  summarize(meanRT = mean(chunk2), CILow = ci.low(chunk2), CIHigh = ci.high(chunk2)) %>% 
+  mutate(YMin = meanRT - CILow, YMax = meanRT + CIHigh)
+
+ggplot(agr,aes(x=SentType, y=meanRT, fill=Conj)) +
+    facet_wrap(~QUDType) +
+    geom_bar(position=dodge,stat="identity") +
+    geom_errorbar(aes(ymin=YMin,ymax=YMax),width=.25,position=dodge)
+```
+
+## By-item 
+```{r}
+d$Number <- as.factor(d$Number)
+agr <- d %>%
+  filter(TrialType =="test") %>%
+  group_by(Number,Conj,QUDType) %>%
+  summarize(meanRT = mean(chunk2), CILow = ci.low(chunk2), CIHigh = ci.high(chunk2)) %>% 
+  mutate(YMin = meanRT - CILow, YMax = meanRT + CIHigh)
+
+ggplot(agr,aes(x=Number, y=meanRT, fill=Conj)) +
+    facet_wrap(~QUDType) +
+    geom_bar(position=dodge,stat="identity") +
+    geom_errorbar(aes(ymin=YMin,ymax=YMax),width=.25,position=dodge)
+```
+
+
+# Looking at decision RT
+## Overall
+```{r}
+d$DecisionRT <- as.numeric(d$DecisionRT)
+
+agr <- d %>%
+  filter(TrialType =="test") %>%
+  group_by(Conj,QUDType) %>%
+  summarize(meanRT = mean(DecisionRT), CILow = ci.low(DecisionRT), CIHigh = ci.high(DecisionRT)) %>% 
+  mutate(YMin = meanRT - CILow, YMax = meanRT + CIHigh)
+
+ggplot(agr,aes(x=QUDType, y=meanRT, fill=Conj)) +
+    geom_bar(position=dodge,stat="identity") +
+    geom_errorbar(aes(ymin=YMin,ymax=YMax),width=.25,position=dodge)
+```
+
+## By-SentType
+```{r}
+agr <- d %>%
+  filter(TrialType =="test") %>%
+  group_by(SentType,Conj,QUDType) %>%
+  summarize(meanRT = mean(DecisionRT), CILow = ci.low(DecisionRT), CIHigh = ci.high(DecisionRT)) %>% 
+  mutate(YMin = meanRT - CILow, YMax = meanRT + CIHigh)
+
+ggplot(agr,aes(x=QUDType, y=meanRT, fill=Conj)) +
+    facet_wrap(~SentType,ncol=2) +
+    geom_bar(position=dodge,stat="identity") +
+    geom_errorbar(aes(ymin=YMin,ymax=YMax),width=.25,position=dodge)
+```
+
+## By-item 
+```{r}
+d$Number <- as.factor(d$Number)
+agr <- d %>%
+  filter(TrialType =="test") %>%
+  group_by(Number,Conj,QUDType) %>%
+  summarize(meanRT = mean(DecisionRT), CILow = ci.low(DecisionRT), CIHigh = ci.high(DecisionRT)) %>% 
+  mutate(YMin = meanRT - CILow, YMax = meanRT + CIHigh)
+
+ggplot(agr,aes(x=QUDType, y=meanRT, fill=Conj)) +
+    facet_wrap(~Number,ncol=2) +
+    geom_bar(position=dodge,stat="identity") +
+    geom_errorbar(aes(ymin=YMin,ymax=YMax),width=.25,position=dodge)
+```

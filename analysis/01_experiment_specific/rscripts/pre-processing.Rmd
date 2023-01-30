@@ -71,7 +71,7 @@ d_tot$ID = as.factor(d_tot$ID)
 nrow(d_tot) #4555
 nrow(d_tot) / 20 # 395.8
 
-length(unique(d_tot$ID)) # 39
+length(unique(d_tot$ID)) # 56
 
 # names(d_tot)
 ```
